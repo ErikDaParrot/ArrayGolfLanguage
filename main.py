@@ -68,7 +68,7 @@ if __name__ == '__main__':
   if sys.argv[1][-3:] == '.ag':
     with open(sys.argv[1]) as contents:
       file = contents.read().replace('\n', '')
-    os.system('clear')
+    os.system('cls' if os.name == 'nt' else 'clear')
     tokens = [parseNestedBracks(i) for i in parseLine(file)]
     #print(tokens)
     stack = parse.run(tokens, [])
