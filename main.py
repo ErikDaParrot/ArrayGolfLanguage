@@ -72,4 +72,4 @@ if __name__ == '__main__':
     tokens = [parseNestedBracks(i) for i in parseLine(file)]
     #print(tokens)
     stack = parse.run(tokens, [])
-    print('{\n' + '\n'.join(['  ' + repr(i) for i in stack]) + '\n}')
+    if stack: print('{\n' + '\n'.join(['  ' + repr(i) for i in stack]) + '\n}')

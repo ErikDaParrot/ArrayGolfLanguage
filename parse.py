@@ -32,7 +32,8 @@ FUNCTIONS = {
     [A, I], lambda x, y: [x * y],
     [I, A], lambda x, y: [x * y],
     [A, L], lambda x, y: [func.group(x, y)],
-    [F, I], lambda x, y, z: [None, *forLoop(x, y, z)]
+    [F, I], lambda x, y, z: [None, *forLoop(x, y, z)],
+    [F, F], lambda x, y, z: [None, *whileLoop(x, y, z)]
   ], '/': [
     [f, f], lambda x, y: [x / y],
     [A, I], lambda x, y: [func.windows(x, y)],
@@ -177,6 +178,8 @@ FUNCTIONS = {
     [a], lambda x: ([], [print(x)])[0],
   ], 'p?': [
     [], lambda: [input()],
+  ], 'p#': [
+    [], lambda: [int(input())],
   ],
   ## PARSING FUNCTIONS
   'e!': [
@@ -232,6 +235,13 @@ def fold(x, y, z, s):
 def forLoop(x, y, z):
   for i in range(y):
     z = run(list(x), z)
+  return z
+  
+def whileLoop(x, y, z):
+  z = run(list(y), z)
+  while z[-1]:
+    z = run(list(y), run(list(x), z[:-1]))
+  z.pop()
   return z
   
 def correctType(x):
