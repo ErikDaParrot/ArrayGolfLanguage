@@ -1,4 +1,5 @@
 import numpy as np
+import main
 import math
 
 dedup = lambda x: [j for i, j in enumerate(x) if j not in x[:i]]
@@ -12,6 +13,7 @@ group = lambda x, y: [i for i, j in zip(x, y) if j] if max(y) <= 1 else \
     for i in range(1, max(y) + 1)]
 resize = lambda x, y: np.resize(list(x), tuple(y)).tolist()
 ravel = lambda x: np.ravel(x).tolist()
+parse = lambda x: [main.parseNestedBracks(i) for i in main.parseLine(x)]
 
 def fromBase(x, y):
   if not x: return [0]

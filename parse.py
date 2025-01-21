@@ -80,7 +80,7 @@ FUNCTIONS = {
     [L, L], lambda x, y: [[np.array(x)[*i] for i in y]]
   ], '?': [
     [A, a], lambda x, y: [int(x in y)],
-    [I, F, F], lambda x, y, z, t: [None, *(run(list(y), t) if x else run(list(z), t))]
+    [I, L], lambda x, y, z: [None, *run(list(y[x]), z)]
   ], '&': [
     [a, a], lambda x, y: [[x, y]],
     [a, a, F], lambda x, y, z, t: [run(list(z), t + [x]), run(list(z), t + [y])],
@@ -101,6 +101,12 @@ FUNCTIONS = {
     [a, a], lambda x, y: [y, x]
   ], ';': [
     [a, a], lambda x, y: [x]
+  ], '(': [
+    [], lambda z: [None, *(z[1:] + z[:1])]
+  ], ')': [
+    [], lambda z: [None, *(z[-1:] + z[:-1])]
+  ], '`': [
+    [I], lambda x, y: [y[-x - 1]]
   ],
   ### EXTERNAL FUNCTIONS
   ## MATH FUNCTIONS
@@ -124,6 +130,8 @@ FUNCTIONS = {
     [f], lambda x: [math.atan(x)]
   ], 'mG': [
     [f], lambda x: [math.gamma(x)]
+  ], 't#': [
+    [A], lambda x: [list(np.array(x).shape)]
   ], 'tp': [
     [f, f], lambda x, y: [math.perm(x, y)],
     [A, I], lambda x, y: [[list(i) for i in list(it.permutations(x, y))]]
@@ -168,9 +176,14 @@ FUNCTIONS = {
   ], 'p!': [
     [a], lambda x: ([], [print(x)])[0],
   ], 'p?': [
-    [a], lambda x: [x, input()],
+    [], lambda: [input()],
   ],
   ## PARSING FUNCTIONS
+  'e!': [
+    [S], lambda x, y: [None, *run(func.parse(x), y)]
+  ], 'e#': [
+    [S], lambda x: [int(x)]
+  ]
 }
 
 def run(tokens, stack):
@@ -189,9 +202,6 @@ def run(tokens, stack):
       except (ZeroDivisionError, ValueError) as e:
         result = [math.nan]
       stack += result
-    elif token == '(': stack = stack[1:] + stack[:1]
-    elif token == ')': stack = stack[-1:] + stack[:-1]
-    elif token == '`': stack = stack[:-1] + [stack[-stack[-1] - 1]]
     elif type(token) == str and token[0] == 'v':
       stack += [CONSTANTS[token[1]]]
     else: stack += [token]
