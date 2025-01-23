@@ -172,6 +172,7 @@ FUNCTIONS = {
     [L, a], lambda x, y: [fold(x, (':', y, '+', ':', '+'), [], 0)],
   ],
   ## IN/OUT FUNCTIONS
+  
   'p.': [
     [a], lambda x: ([], [print(x, end = '')])[0],
   ], 'p!': [
