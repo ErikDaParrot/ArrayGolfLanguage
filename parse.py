@@ -52,7 +52,7 @@ FUNCTIONS = {
   ], '~': [
     [f], lambda x: [-x],
     [L], lambda x: [func.ravel(x)],
-    [S], lambda x: [int(x)]
+    [S], lambda x, y: [None, *run(func.parse(x), y)]
   ], '|': [
     [f, f], lambda x, y: [int(x or y)],
     [A, I], lambda x, y: [x[y:] + x[:y]],
@@ -178,15 +178,7 @@ FUNCTIONS = {
     [a], lambda x: ([], [print(x)])[0],
   ], 'p?': [
     [], lambda: [input()],
-  ], 'p#': [
-    [], lambda: [int(input())],
   ],
-  ## PARSING FUNCTIONS
-  'e!': [
-    [S], lambda x, y: [None, *run(func.parse(x), y)]
-  ], 'e#': [
-    [S], lambda x: [int(x)]
-  ]
 }
 
 def run(tokens, stack):
