@@ -109,7 +109,6 @@ FUNCTIONS = {
   ], '`': [
     [I], lambda x, y: [y[-x - 1]]
   ],
-  
 }
 
 def run(tokens, stack):
