@@ -1,11 +1,16 @@
 import numpy as np
 import random as rand
-import math
+import math, random
 import func
 import itertools as it
+import time, re
+import datetime as dt
+import calendar as cal
 
 f, I, S, L, F = [complex, float, int], [int], [str], [list], [tuple]
 s, A, i, N, a = [complex, float, int, str], [str, list], [int, list], [float, int, list], [complex, float, int, str, list]
+
+vars = {}
 
 CONSTANTS = {
   'a': 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
@@ -117,21 +122,12 @@ FUNCTIONS = {
     [f], lambda x: [math.ceil(x)]
   ], 'm~': [
     [f], lambda x: [round(x)]
-  ], 'ms': [
-    [f], lambda x: [math.sin(x)]
-  ], 'mc': [
-    [f], lambda x: [math.cos(x)]
   ], 'mt': [
-    [f], lambda x: [math.tan(x)]
-  ], 'mS': [
-    [f], lambda x: [math.asin(x)]
-  ], 'mC': [
-    [f], lambda x: [math.acos(x)]
-  ], 'mT': [
-    [f], lambda x: [math.atan(x)]
-  ], 'mG': [
+    [f, I], lambda x, y: [func.trigonometry(y)[x]]
+  ], 'm!': [
     [f], lambda x: [math.gamma(x)]
   ], 't#': [
+    [I, I], lambda x, y: [list(range(x, y))],
     [A], lambda x: [list(np.array(x).shape)]
   ], 'tp': [
     [f, f], lambda x, y: [math.perm(x, y)],
@@ -161,15 +157,21 @@ FUNCTIONS = {
     [I], lambda x: [chr(x)],
     [S], lambda x: [[ord(i) for i in x] if len(x) == 1 else ord(x)],
     [L], lambda x: [chr(i) for i in x],
-  ], 'sU': [
+  ], 's+': [
     [S], lambda x: [x.upper()]
-  ], 'sL': [
+  ], 's-': [
     [S], lambda x: [x.lower()]
   ], 's~': [
     [S], lambda x: [x.swapcase()]
   ], 's*': [
     [S, S], lambda x, y: [fold(x, (':', y, '+', ':', '+'), [], 0)],
     [L, a], lambda x, y: [fold(x, (':', y, '+', ':', '+'), [], 0)],
+  ], 'sR': [
+    [S, S], lambda x, y: [re.findall(y, x)]
+  ], 'sr': [
+    [S, S, S], lambda x, y, z: [x.replace(y, z)]
+  ], 's!': [
+    [S, S], lambda x, y: [x.replace(y, '')]
   ],
   ## IN/OUT FUNCTIONS
   'p.': [
@@ -179,12 +181,32 @@ FUNCTIONS = {
   ], 'p?': [
     [], lambda: [input()],
   ],
+  ## DATETIME FUNCTIONS
+  'd>': [
+    [f], lambda x: [list(time.gmtime(x))[:6]]
+  ], 'd<': [
+    [L], lambda x: [dt.datetime(*x, tzinfo = dt.timezone.utc).timestamp()]
+  ], 'd.': [
+    [], lambda: [time.time()]
+  ], 'd|': [
+    [], lambda: [time.localtime().tm_gmtoff / 3600]
+  ],
+  ## RANDOM FUNCTIONS
+  'r~': [
+    [], lambda x: [random.random()],
+  ], 'r-': [
+    [I, I], lambda x, y: [random.randint(x, y)],
+  ], 'r?': [
+    [A], lambda x: [random.choice(x)],
+  ]
 }
 
 def run(tokens, stack):
   for token in tokens:
     if str(token)[0] + str(token)[-1] == '""': stack += [token[1:-1]]
     elif type(token) == list: stack += [run(token, [])]
+    elif str(token)[:2] == '::': vars[token[2]] = stack[-1]; stack.pop()
+    elif str(token) == str(token).upper() and str(token).isalpha(): stack += [vars[token]]
     elif token in FUNCTIONS.keys():
       stackB4 = stack
       stackValues, function = findFunc(token, stack)
