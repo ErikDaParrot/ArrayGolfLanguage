@@ -14,6 +14,7 @@ group = lambda x, y: [i for i, j in zip(x, y) if j] if max(y) <= 1 else \
 resize = lambda x, y: np.resize(list(x), tuple(y)).tolist()
 ravel = lambda x: np.ravel(x).tolist()
 parse = lambda x: [main.parseNestedBracks(i) for i in main.parseLine(x)]
+trigonometry = lambda x: [0, math.sin(x), math.cos(x), math.tan(x), math.atan(x), math.acos(x), math.asin(x)]
 
 def fromBase(x, y):
   if not x: return [0]
