@@ -106,7 +106,7 @@ FUNCTIONS = {
   ], ':': [
     [a, a], lambda x, y: [y, x]
   ], ';': [
-    [a, a], lambda x, y: [x]
+    [a], lambda x: []
   ], '(': [
     [], lambda z: [None, *(z[1:] + z[:1])]
   ], ')': [
