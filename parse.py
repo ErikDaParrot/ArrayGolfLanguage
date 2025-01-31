@@ -114,8 +114,8 @@ FUNCTIONS = {
   ], '`': [
     [I], lambda x, y: [y[-x - 1]]
   ], 
-  ### EXTERNAL FUNCTIONS
-  ## MATH FUNCTIONS
+  ## EXTERNAL FUNCTIONS
+  # MATH FUNCTIONS
   'm[': [
     [f], lambda x: [math.floor(x)]
   ], 'm]': [
@@ -124,9 +124,15 @@ FUNCTIONS = {
     [f], lambda x: [round(x)]
   ], 'mt': [
     [f, I], lambda x, y: [func.trigonometry(y)[x]]
+  ], 'mE': [
+    [I], lambda x: [math.exp(x)]
+  ], 'me': [
+    [I, I], lambda x, y: [x * 10 ** y]
   ], 'm!': [
     [f], lambda x: [math.gamma(x)]
-  ], 't#': [
+  ], 
+  # TUPLE FUNCTIONS
+  't#': [
     [I, I], lambda x, y: [list(range(x, y))],
     [A], lambda x: [list(np.array(x).shape)]
   ], 'tp': [
@@ -141,7 +147,9 @@ FUNCTIONS = {
     [A], lambda x: [[x[0] if i == 1 else x[:i] for i in range(1, len(x) + 1)]]
   ], 't<': [
     [A], lambda x: [[x[-1] if i == 1 else x[-i:] for i in range(1, len(x) + 1)]]
-  ], 'c+': [
+  ], 
+  # COMPLEX FUNCTIONS
+  'c+': [
     [f, f], lambda x, y: [complex(x, y)]
   ], 'c|': [
     [f], lambda x: [math.sqrt(x.real**2 + x.imag**2)]
@@ -152,7 +160,7 @@ FUNCTIONS = {
   ], 'cT': [
     [f, f], lambda x, y: [math.atan2(x, y)]
   ], 
-  ## STRING FUNCTIONS
+  # STRING FUNCTIONS
   's#': [
     [I], lambda x: [chr(x)],
     [S], lambda x: [[ord(i) for i in x] if len(x) == 1 else ord(x)],
@@ -173,7 +181,7 @@ FUNCTIONS = {
   ], 's!': [
     [S, S], lambda x, y: [x.replace(y, '')]
   ],
-  ## IN/OUT FUNCTIONS
+  # IN/OUT FUNCTIONS
   'p.': [
     [a], lambda x: ([], [print(x, end = '')])[0],
   ], 'p!': [
@@ -181,7 +189,7 @@ FUNCTIONS = {
   ], 'p?': [
     [], lambda: [input()],
   ],
-  ## DATETIME FUNCTIONS
+  # DATETIME FUNCTIONS
   'd>': [
     [f], lambda x: [list(time.gmtime(x))[:6]]
   ], 'd<': [
@@ -191,7 +199,7 @@ FUNCTIONS = {
   ], 'd|': [
     [], lambda: [time.localtime().tm_gmtoff / 3600]
   ],
-  ## RANDOM FUNCTIONS
+  # RANDOM FUNCTIONS
   'r~': [
     [], lambda x: [random.random()],
   ], 'r-': [
