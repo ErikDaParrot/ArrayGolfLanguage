@@ -19,7 +19,4 @@ python3 main.py <file-name> ==> run file
 More features will be added later!
 
 # Documentation
-Documentation is still in progress as the language is still evolving. For now, refer to *parse.py* for the definitions of the functions.  
-Stay tuned for future updates!
-
-**Note: For future updates there will be a Comparisons page to refer to as a dictionary between programming languages.**
+Documentation is still in progress. Stay tuned!
