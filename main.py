@@ -68,7 +68,7 @@ def parseNestedBracks(line):
 if __name__ == '__main__':
   if sys.argv[1][-3:] == '.ag':
     with open(sys.argv[1]) as contents:
-      file = '\n'.join([i[:i.index('.;')] for i in contents.readlines()])
+      file = '\n'.join([i[:i.index('.;') if '.;' in i else len(i)] for i in contents.readlines()])
     os.system('cls' if os.name == 'nt' else 'clear')
     tokens = [parseNestedBracks(i) for i in parseLine(file)]
     stack = parse.run(tokens, [])

@@ -59,22 +59,22 @@ FUNCTIONS = {
     [L], lambda x: [func.ravel(x)],
     [S], lambda x, y: [None, *run(func.parse(x), y)]
   ], '|': [
-    [f, f], lambda x, y: [int(x or y)],
+    [f, f], lambda x, y: [x or y],
     [A, I], lambda x, y: [x[y:] + x[:y]],
     [A, L], lambda x, y: [func.reshape(x, y)],
     [A, A, F], lambda x, y, z, t: [[run(list(z), t + [i, j])[-1] for i, j in zip(x, y)]]
   ], '<': [
-    [f, f], lambda x, y: [int(x < y)],
+    [f, f], lambda x, y: [x < y],
     [A, I], lambda x, y: [x[:y]],
     [A], lambda x: [x[0]], 
     [a, a, F], lambda x, y, z, t: [[x, y] + run(list(z), t)]
   ], '>': [
-    [f, f], lambda x, y: [int(x > y)],
+    [f, f], lambda x, y: [x > y],
     [A, I], lambda x, y: [x[y:]],
     [A], lambda x: [x[-1]],
     [a, a, F], lambda x, y, z, t: [run(list(z), t) + [x, y]]
   ], '=': [
-    [a, a], lambda x, y: [int(x == y)],
+    [a, a], lambda x, y: [x == y],
     [A, A, F], lambda x, y, z, t: [[[run(list(z), t + [i, j])[-1] for i in x] for j in y]]
   ], '\\': [
     [I], lambda x: [1 / x],
@@ -85,7 +85,7 @@ FUNCTIONS = {
     [A, I], lambda x, y: [x[y]],
     [L, L], lambda x, y: [[np.array(x)[*i] for i in y]]
   ], '?': [
-    [A, a], lambda x, y: [int(x in y)],
+    [A, a], lambda x, y: [x in y],
     [I, L], lambda x, y, z: [None, *run(list(y[x]), z)]
   ], '&': [
     [a, a], lambda x, y: [[x, y]],
@@ -116,7 +116,9 @@ FUNCTIONS = {
   ], 
   ## EXTERNAL FUNCTIONS
   # MATH FUNCTIONS
-  'm[': [
+  'm+': [
+    [f], lambda x: [(x > 0) - (x < 0)]
+  ], 'm[': [
     [f], lambda x: [math.floor(x)]
   ], 'm]': [
     [f], lambda x: [math.ceil(x)]
@@ -126,11 +128,11 @@ FUNCTIONS = {
     [f, I], lambda x, y: [func.trigonometry(y)[x]]
   ], 'mE': [
     [I], lambda x: [math.exp(x)]
-  ], 'me': [
-    [I, I], lambda x, y: [x * 10 ** y]
   ], 'm!': [
     [f], lambda x: [math.gamma(x)]
-  ], 
+  ], 'mp': [
+    [I], lambda x: [all(x % i > 0 for i in range(int(x ** 0.5)+1)[2:])]
+  ],
   # TUPLE FUNCTIONS
   't#': [
     [I, I], lambda x, y: [list(range(x, y))],
@@ -267,8 +269,9 @@ def whileLoop(x, y, z):
   return z
   
 def correctType(x):
-  if type(x) in f:
+  if type(x) in f + [bool]:
     if math.isnan(x) or (type(x) is complex): return x
+    elif type(x) is bool: return int(x)
     return int(x) if int(x) == x else x
   elif all([type(_) == str and len(_) == 1 for _ in x]):
     return ''.join(x)
