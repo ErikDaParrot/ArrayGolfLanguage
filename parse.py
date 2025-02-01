@@ -54,10 +54,14 @@ FUNCTIONS = {
   ], '!': [
     [f], lambda x: [1 - x],
     [A], lambda x: [func.unique(x)],
+    [F], lambda x, y: [None, *run(x, y)]
   ], '~': [
     [f], lambda x: [-x],
     [L], lambda x: [func.ravel(x)],
     [S], lambda x, y: [None, *run(func.parse(x), y)]
+  ], '_~': [
+    [f], lambda x: [(x > 0) - (x < 0)],
+    [S], lambda x: [x.swapcase()],
   ], '|': [
     [f, f], lambda x, y: [x or y],
     [A, I], lambda x, y: [x[y:] + x[:y]],
@@ -83,7 +87,7 @@ FUNCTIONS = {
   ], '@': [
     [f, f], lambda x, y: [math.log(x, y)],
     [A, I], lambda x, y: [x[y]],
-    [L, L], lambda x, y: [[np.array(x)[*i] for i in y]]
+    [L, L], lambda x, y: [func.select(x, y)]
   ], '?': [
     [A, a], lambda x, y: [x in y],
     [I, L], lambda x, y, z: [None, *run(list(y[x]), z)]
@@ -96,9 +100,24 @@ FUNCTIONS = {
     [A, F], lambda x, y, z: [[run(list(y), z + [i, j])[-1] for i, j in enumerate(x)]]
   ], '_': [
     [a], lambda x: [[x]]
+  ], '_<': [
+    [f, f], lambda x, y: [min(x, y)],
+    [S], lambda x: [x.lower() if len(x) == 1 else func.suffix(x)],
+    [A], lambda x: [func.suffix(x)]
+  ], '_>': [
+    [f, f], lambda x, y: [max(x, y)],
+    [S], lambda x: [x.upper() if len(x) == 1 else func.suffix(x)],
+    [A], lambda x: [func.prefix(x)]
+  ], '_#': [
+    [I, I], lambda x, y: [list(range(x, y))],
+    [L], lambda x: [list(np.array(x).shape)]
   ], '$': [
     [A], lambda x: [sorted(x)],
     [A, F], lambda x, y, z: [sorted(x, key = lambda i: run(list(y), z + [i])[-1])]
+  ], '$#': [
+    [I], lambda x: [chr(x)],
+    [S], lambda x: [[ord(i) for i in x] if len(x) == 1 else ord(x)],
+    [L], lambda x: [chr(i) for i in x],
   ], '.': [
     [a], lambda x: [x, x]
   ], ',': [
@@ -116,9 +135,7 @@ FUNCTIONS = {
   ], 
   ## EXTERNAL FUNCTIONS
   # MATH FUNCTIONS
-  'm+': [
-    [f], lambda x: [(x > 0) - (x < 0)]
-  ], 'm[': [
+  'm[': [
     [f], lambda x: [math.floor(x)]
   ], 'm]': [
     [f], lambda x: [math.ceil(x)]
@@ -134,10 +151,7 @@ FUNCTIONS = {
     [I], lambda x: [all(x % i > 0 for i in range(int(x ** 0.5)+1)[2:])]
   ],
   # TUPLE FUNCTIONS
-  't#': [
-    [I, I], lambda x, y: [list(range(x, y))],
-    [A], lambda x: [list(np.array(x).shape)]
-  ], 'tp': [
+  'tp': [
     [f, f], lambda x, y: [math.perm(x, y)],
     [A, I], lambda x, y: [[list(i) for i in list(it.permutations(x, y))]]
   ], 'tc': [
@@ -145,11 +159,7 @@ FUNCTIONS = {
     [A, I], lambda x, y: [[list(i) for i in list(it.combinations(x, y))]]
   ], 'tC': [
     [A, I], lambda x, y: [[list(i) for i in list(it.combinations_with_replacement(x, y))]]
-  ], 't>': [
-    [A], lambda x: [[x[0] if i == 1 else x[:i] for i in range(1, len(x) + 1)]]
-  ], 't<': [
-    [A], lambda x: [[x[-1] if i == 1 else x[-i:] for i in range(1, len(x) + 1)]]
-  ], 
+  ],
   # COMPLEX FUNCTIONS
   'c+': [
     [f, f], lambda x, y: [complex(x, y)]
@@ -163,17 +173,7 @@ FUNCTIONS = {
     [f, f], lambda x, y: [math.atan2(x, y)]
   ], 
   # STRING FUNCTIONS
-  's#': [
-    [I], lambda x: [chr(x)],
-    [S], lambda x: [[ord(i) for i in x] if len(x) == 1 else ord(x)],
-    [L], lambda x: [chr(i) for i in x],
-  ], 's+': [
-    [S], lambda x: [x.upper()]
-  ], 's-': [
-    [S], lambda x: [x.lower()]
-  ], 's~': [
-    [S], lambda x: [x.swapcase()]
-  ], 's*': [
+  's*': [
     [S, S], lambda x, y: [fold(x, (':', y, '+', ':', '+'), [], 0)],
     [L, a], lambda x, y: [fold(x, (':', y, '+', ':', '+'), [], 0)],
   ], 'sR': [
