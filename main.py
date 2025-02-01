@@ -47,11 +47,12 @@ def parseLine(line):
     elif token == 'v':
       idx += 1; token += line[idx]
     else:
-      while token in ''.join(list(parse.FUNCTIONS.keys())):
+      funcs = list(parse.FUNCTIONS.keys())
+      contains = lambda x, y: [x in i for i in y]
+      while any(contains(token, funcs)):
         idx += 1
         try: token += line[idx]
         except: token += ' '; break
-        if token[:-1] in list(parse.FUNCTIONS.keys()): break;
       idx -= 1; token = token[:-1]
     tokens += [token]; idx += 1
     try: line[idx]
@@ -73,3 +74,4 @@ if __name__ == '__main__':
     tokens = [parseNestedBracks(i) for i in parseLine(file)]
     stack = parse.run(tokens, [])
     if stack: print('{\n' + '\n'.join(['  ' + repr(i) for i in stack]) + '\n}')
+    
