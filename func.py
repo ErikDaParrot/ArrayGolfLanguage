@@ -12,9 +12,13 @@ group = lambda x, y: [i for i, j in zip(x, y) if j] if max(y) <= 1 else \
   [[x[n] for n in [j for j, k in enumerate(y) if k == i]] \
     for i in range(1, max(y) + 1)]
 resize = lambda x, y: np.resize(list(x), tuple(y)).tolist()
+select = lambda x, y: [np.array(x)[*([i] if type(i) is int else i)].tolist() for i in y]
 ravel = lambda x: np.ravel(x).tolist()
 parse = lambda x: [main.parseNestedBracks(i) for i in main.parseLine(x)]
 trigonometry = lambda x: [0, math.sin(x), math.cos(x), math.tan(x), math.atan(x), math.acos(x), math.asin(x)]
+prefix = lambda x: [x[0] if i == 1 else x[:i] for i in range(1, len(x) + 1)]
+suffix = lambda x: [x[-1] if i == 1 else x[-i:] for i in range(1, len(x) + 1)]
+
 
 def fromBase(x, y):
   if not x: return [0]
