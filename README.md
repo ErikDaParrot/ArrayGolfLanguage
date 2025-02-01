@@ -8,7 +8,7 @@ Examples:
 #{1+'**}%'\ns*p!       ==> creates a star triangle
 va.sLvd++:{:?}-2/' s*  ==> blur the text code-golf problem¹
 ```
-¹code-golf problem [here](https://codegolf.stackexchange.com/questions/203893/bl-lu-ur-rr-ry-yv-vi-is-si-io-on-blur-the-text)
+¹code-golf problem [here](https://codegolf.stackexchange.com/questions/203893/bl-lu-ur-rr-ry-yv-vi-is-si-io-on-blur-the-text/278020#278020)
 
 # Running
 Just download the source code and python (if not already installed), and then run *main.py* from the command line.
