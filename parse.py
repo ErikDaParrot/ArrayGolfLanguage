@@ -10,6 +10,10 @@ import calendar as cal
 f, I, S, L, F = [complex, float, int], [int], [str], [list], [tuple]
 s, A, i, N, a = [complex, float, int, str], [str, list], [int, list], [float, int, list], [complex, float, int, str, list]
 
+findPop = lambda x, y, z, t: max(0, findSig(x, y + z)[0] - t)
+findPush = lambda x, y, z, t: max(0, findSig(x, y + z)[1] - t)
+VIV = lambda x, y: x if x else y # VALUE IF VALUE IS NOT 'EMPTY'
+
 vars = {}
 
 CONSTANTS = {
@@ -31,7 +35,7 @@ FUNCTIONS = {
   ], '-': [
     [f, f], lambda x, y: [x - y],
     [A], lambda x: [func.classify(x)],
-    [A, F], lambda x, y, z: [[i for i in x if run(list(y), z + [i])[-1]]]
+    [A, F], lambda x, y, z: [[i for i in x if run(y, z + [i])[-1]]]
   ], '*': [
     [f, f], lambda x, y: [x * y],
     [A, I], lambda x, y: [x * y],
@@ -47,7 +51,7 @@ FUNCTIONS = {
   ], '%': [
     [f, f], lambda x, y: [x % y],
     [A], lambda x: [func.transpose(x)],
-    [A, F], lambda x, y, z: [[run(list(y), z + [i])[-1] for i in x]],
+    [A, F], lambda x, y, z: [None, *map(x, y, z)],
   ], '^': [
     [f, f], lambda x, y: [x ** y],
     [A], lambda x: [func.dedup(x)]
@@ -59,27 +63,24 @@ FUNCTIONS = {
     [f], lambda x: [-x],
     [L], lambda x: [func.ravel(x)],
     [S], lambda x, y: [None, *run(func.parse(x), y)]
-  ], '_~': [
-    [f], lambda x: [(x > 0) - (x < 0)],
-    [S], lambda x: [x.swapcase()],
   ], '|': [
     [f, f], lambda x, y: [x or y],
     [A, I], lambda x, y: [x[y:] + x[:y]],
     [A, L], lambda x, y: [func.reshape(x, y)],
-    [A, A, F], lambda x, y, z, t: [[run(list(z), t + [i, j])[-1] for i, j in zip(x, y)]]
+    [A, A, F], lambda x, y, z, t: [None, *zipmap(x, y, z, t)]
   ], '<': [
     [f, f], lambda x, y: [x < y],
     [A, I], lambda x, y: [x[:y]],
     [A], lambda x: [x[0]], 
-    [a, a, F], lambda x, y, z, t: [[x, y] + run(list(z), t)]
+    [a, a, F], lambda x, y, z, t: [[x, y] + run(z, t)]
   ], '>': [
     [f, f], lambda x, y: [x > y],
     [A, I], lambda x, y: [x[y:]],
     [A], lambda x: [x[-1]],
-    [a, a, F], lambda x, y, z, t: [run(list(z), t) + [x, y]]
+    [a, a, F], lambda x, y, z, t: [run(z, t) + [x, y]]
   ], '=': [
     [a, a], lambda x, y: [x == y],
-    [A, A, F], lambda x, y, z, t: [[[run(list(z), t + [i, j])[-1] for i in x] for j in y]]
+    [A, A, F], lambda x, y, z, t: [None, *table(x, y, z, t)]
   ], '\\': [
     [I], lambda x: [1 / x],
     [A], lambda x: [x[::-1]],
@@ -90,16 +91,21 @@ FUNCTIONS = {
     [L, L], lambda x, y: [func.select(x, y)]
   ], '?': [
     [A, a], lambda x, y: [x in y],
-    [I, L], lambda x, y, z: [None, *run(list(y[x]), z)]
+    [I, L], lambda x, y, z: [None, *run(y[x], z)]
   ], '&': [
     [a, a], lambda x, y: [[x, y]],
-    [a, a, F], lambda x, y, z, t: [run(list(z), t + [x]), run(list(z), t + [y])],
+    [a, a, F], lambda x, y, z, t: [run(z, t + [x]), run(z, t + [y])],
   ], '#': [
     [I], lambda x: [list(range(x))],
     [A], lambda x: [len(x)],
-    [A, F], lambda x, y, z: [[run(list(y), z + [i, j])[-1] for i, j in enumerate(x)]]
+    [A, F], lambda x, y, z: [None, *zipmap(list(range(len(x))), x, y, z)]
   ], '_': [
     [a], lambda x: [[x]]
+  ], '_~': [
+    [f], lambda x: [(x > 0) - (x < 0)],
+    [S], lambda x: [x.swapcase()],
+  ], '_\\': [
+    [f], lambda x: [math.sqrt(x.real**2 + x.imag**2)]
   ], '_<': [
     [f, f], lambda x, y: [min(x, y)],
     [S], lambda x: [x.lower() if len(x) == 1 else func.suffix(x)],
@@ -113,11 +119,7 @@ FUNCTIONS = {
     [L], lambda x: [list(np.array(x).shape)]
   ], '$': [
     [A], lambda x: [sorted(x)],
-    [A, F], lambda x, y, z: [sorted(x, key = lambda i: run(list(y), z + [i])[-1])]
-  ], '$#': [
-    [I], lambda x: [chr(x)],
-    [S], lambda x: [[ord(i) for i in x] if len(x) == 1 else ord(x)],
-    [L], lambda x: [chr(i) for i in x],
+    [A, F], lambda x, y, z: [sorted(x, key = lambda i: run(y, z + [i])[-1])]
   ], '.': [
     [a], lambda x: [x, x]
   ], ',': [
@@ -148,7 +150,7 @@ FUNCTIONS = {
   ], 'm!': [
     [f], lambda x: [math.gamma(x)]
   ], 'mp': [
-    [I], lambda x: [all(x % i > 0 for i in range(int(x ** 0.5)+1)[2:])]
+    [I], lambda x: [all(x % i > 0 for i in range(int(x ** 0.5) + 1)[2:])]
   ],
   # TUPLE FUNCTIONS
   'tp': [
@@ -162,18 +164,18 @@ FUNCTIONS = {
   ],
   # COMPLEX FUNCTIONS
   'c+': [
-    [f, f], lambda x, y: [complex(x, y)]
-  ], 'c|': [
-    [f], lambda x: [math.sqrt(x.real**2 + x.imag**2)]
+    [f[1:], f[1:]], lambda x, y: [complex(x, y)]
   ], 'c:': [
-    [f], lambda x: [x.real, x.imag]
+    [f[0]], lambda x: [x.real, x.imag]
   ], 'c-': [
-    [f], lambda x: [complex(x.real, -x.imag)]
-  ], 'cT': [
-    [f, f], lambda x, y: [math.atan2(x, y)]
-  ], 
+    [f[0]], lambda x: [complex(x.real, -x.imag)]
+  ],
   # STRING FUNCTIONS
-  's*': [
+  's#': [
+    [I], lambda x: [chr(x)],
+    [S], lambda x: [[ord(i) for i in x] if len(x) == 1 else ord(x)],
+    [L], lambda x: [chr(i) for i in x],
+  ], 's*': [
     [S, S], lambda x, y: [fold(x, (':', y, '+', ':', '+'), [], 0)],
     [L, a], lambda x, y: [fold(x, (':', y, '+', ':', '+'), [], 0)],
   ], 'sR': [
@@ -237,36 +239,63 @@ def run(tokens, stack):
 def findFunc(token, stack):
   function, stackpops = [], 0
   for i in range(0, len(FUNCTIONS[token]), 2):
-    test = FUNCTIONS[token][i:i+2];
-    stackpops = len(test[0]);
+    test = FUNCTIONS[token][i:i+2]; stackpops = len(test[0]);
     if stackpops > len(stack): continue
-    stackValues = [stack[-_ - 1] for _ in range(stackpops)][::-1]
-    stackTypes = [type(_) for _ in stackValues]
-    stackTypes = [x in y for x, y in zip(stackTypes, test[0])]
-    if all(stackTypes): 
+    vals = [stack[-_ - 1] for _ in range(stackpops)][::-1]
+    types = [type(_) for _ in vals]
+    types = [x in y for x, y in zip(types, test[0])]
+    if all(types): 
       function = test; break
   if not function: raise ValueError(f"stack not compatible for '{token}'")
   return ([stack.pop() for _ in range(stackpops)][::-1], function)
   
 def fold(x, y, z, s):
-  x = list(x)
   a = [x[0]]
   while len(x) > 1:
-    r = run(list(y), z + x[:2])[-1]; x = x[2:]
-    a += [r]; x = [r] + x
+    r = run(y, z + x[:2])[-1]; x = [r] + x[2:]; a += [r]
   return a if s else x[0]
   
 def forLoop(x, y, z):
-  for i in range(y):
-    z = run(list(x), z)
+  for i in range(y): z = run(x, z)
   return z
   
+def map(x, y, z):
+  pop = [findPop(y, z, [i], 1) for i in x]
+  push = [findPush(y, z, [i], 1) for i in x]
+  result = func.transpose([run(y, z + [i])[-1 - min(push):] for i in x])
+  return z[:VIV(-min(pop), len(z))] + result[0]
+
+def zipmap(x, y, z, t):
+  pop = [findPop(z, t, [i, j], 2) for i, j in zip(x, y)]
+  push = [findPush(z, t, [i, j], 1) for i, j in zip(x, y)]
+  result = func.transpose([run(z, t + [i, j])[-1 - min(push):] for i, j in zip(x, y)])
+  return t[:VIV(-min(pop), len(t))] + result[0]
+
+def table(x, y, z, t):
+  pop = [findPop(z, t, [i, j], 2) for j in y for i in x]
+  push = [findPush(z, t, [i, j], 1) for j in y for i in x]
+  result = func.transpose([func.transpose([run(z, t + [i, j])[-1 - min(push):] for j in y])[0] for i in x])
+  return t[:VIV(-min(pop), len(t))] + result[0]
+  
 def whileLoop(x, y, z):
-  z = run(list(y), z)
-  while z[-1]:
-    z = run(list(y), run(list(x), z[:-1]))
-  z.pop()
-  return z
+  z = run(y, z)
+  while z[-1]: z = run(y, run(x, z[:-1]))
+  return z[:-1]
+  
+def findSig(x, y):
+  pop, push = 0, 0
+  for i in x:
+    # print(y, i)
+    if i not in FUNCTIONS.keys():
+      push += 1; y += run([i], []); continue
+    vals, func = findFunc(i, y)
+    try: output = func[1](*[*vals, y])
+    except: output = func[1](*vals)
+    if output[0] == None: continue
+    pop += len(vals) - push
+    push = max(0, push - len(vals)) + len(output)
+    y = y[-len(vals):] + [*output]
+  return pop, push
   
 def correctType(x):
   if type(x) in f + [bool]:
@@ -276,3 +305,6 @@ def correctType(x):
   elif all([type(_) == str and len(_) == 1 for _ in x]):
     return ''.join(x)
   else: return x
+  
+# print(findSig(('+', 11), [1, 11]))
+# print(map([1, 2, 3], ('+', 11), [11]))
