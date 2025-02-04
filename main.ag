@@ -1,6 +1,4 @@
-d.d|3600*+d>::N .; Current time
-6#{;6#r?}% .; Random numbers
-{.#2>{%0>}%$<}::P .; Built-in primality check, but instead doesn't pop the input
-                  .; Add ':;' to the end of the function to pop the input
-11P!:;
-[1 2 2 3 4 5]^
+.; d.d|3600*+d>::N .; Current time
+.; 6#{;6#r?}% .; Random numbers
+{.#2>{%0>}%$<}::P .; Built-in primality check
+5 4 6#.{+++}=
