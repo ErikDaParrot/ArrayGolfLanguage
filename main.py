@@ -3,7 +3,7 @@ import os
 import sys
 
 def parseLine(line):
-  tokens, token, idx = [], "", 0;
+  tokens, token, idx = [], "", 0
   if line.isspace() or line == '': return []
   while True:
     token = line[idx]
