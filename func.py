@@ -18,15 +18,10 @@ parse = lambda x: [main.parseNestedBracks(i) for i in main.parseLine(x)]
 trigonometry = lambda x: [0, math.sin(x), math.cos(x), math.tan(x), math.atan(x), math.acos(x), math.asin(x)]
 prefix = lambda x: [x[0] if i == 1 else x[:i] for i in range(1, len(x) + 1)]
 suffix = lambda x: [x[-1] if i == 1 else x[-i:] for i in range(1, len(x) + 1)]
-
-
-def fromBase(x, y):
-  if not x: return [0]
-  r = []
-  while x:
-    x, m = divmod(x, y); r = [m] + r
-  return r
-  
+reshape = lambda x, y: (resize(ravel(x), y) if 0 not in y else \
+  reshape(x, [len(ravel(x)) // math.prod([i for i in y if i != 0]) if i == 0 else i for i in y])) \
+    if y.count(0) <= 1 else None
+    
 def partition(x, y):
   ap, p = [], []   # all parts, part
   l = None         # last
@@ -35,9 +30,5 @@ def partition(x, y):
       if j != l:
         l = j; ap += [p] if p else []; p = [i]
       else: p += [i]
-  ap += [p] if p else []
+  ap += [p] * (p != [])
   return ap[0] if max(y) == 1 else ap
-  
-reshape = lambda x, y: (resize(ravel(x), y) if 0 not in y else \
-  reshape(x, [len(ravel(x)) // math.prod([i for i in y if i != 0]) if i == 0 else i for i in y])) \
-    if y.count(0) <= 1 else None
