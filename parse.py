@@ -19,6 +19,7 @@ vars = {}
 CONSTANTS = {
   'a': 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
   'd': '0123456789',
+  'p': func.primesLess(1000005),
   'P': math.pi,
   'E': math.e,
   'R': 180 / math.pi,
@@ -35,7 +36,7 @@ FUNCTIONS = {
   ], '-': [
     [f, f], lambda x, y: [x - y],
     [A], lambda x: [func.classify(x)],
-    [A, F], lambda x, y, z: [[i for i in x if run(y, z + [i])[-1]]]
+    [A, F], lambda x, y, z: [None, *run([y + (0, '=', '!'), '%', x, ':', '*'], z + [x])]
   ], '*': [
     [f, f], lambda x, y: [x * y],
     [A, I], lambda x, y: [x * y],
@@ -90,7 +91,7 @@ FUNCTIONS = {
     [A, I], lambda x, y: [x[y]],
     [L, L], lambda x, y: [func.select(x, y)]
   ], '?': [
-    [A, a], lambda x, y: [x in y],
+    [A, a], lambda x, y: [y in x],
     [I, L], lambda x, y, z: [None, *run(y[x], z)]
   ], '&': [
     [a, a], lambda x, y: [[x, y]],
@@ -215,12 +216,12 @@ FUNCTIONS = {
 
 def run(tokens, stack):
   for token in tokens:
+    print(token, stack)
     if str(token)[0] + str(token)[-1] == '""': stack += [token[1:-1]]
     elif type(token) == list: stack += [run(token, [])]
     elif str(token)[:2] == '::': vars[token[2]] = stack[-1]; stack.pop()
-    elif str(token) == str(token).upper() and str(token).isalpha(): stack += [vars[token]]
+    elif str(token).isupper() and str(token).isalpha(): stack += [vars[token]]
     elif token in FUNCTIONS.keys():
-      stackB4 = stack
       stackValues, function = findFunc(token, stack)
       try:
         try: result = function[1](*[*stackValues, stack])
@@ -260,18 +261,25 @@ def forLoop(x, y, z):
   return z
   
 def map(x, y, z):
+  if not x: return z + [x]
+  # print('map:\n', repr(x), '\n', repr(y), '\n', repr(z))
   pop = [findPop(y, z, [i], 1) for i in x]
   push = [findPush(y, z, [i], 1) for i in x]
-  result = func.transpose([run(y, z + [i])[-1 - min(push):] for i in x])
-  return z[:VIV(-min(pop), len(z))] + result[0]
+  result = [run(y, z + [i])[-1 - min(push):] for i in x]
+  result = func.transpose(result) if result else [[]]
+  pop, push = VIV(pop, [0]), VIV(push, [0])
+  return z[:VIV(-min(pop), len(z))] + result[0] if result else [[]]
 
 def zipmap(x, y, z, t):
+  if [] in [x, y]: raise ValueError('\'|\' requires two non-empty lists')
+  if len(x) != len(y): raise ValueError('\'|\' requires two equal-length lists')
   pop = [findPop(z, t, [i, j], 2) for i, j in zip(x, y)]
   push = [findPush(z, t, [i, j], 1) for i, j in zip(x, y)]
   result = func.transpose([run(z, t + [i, j])[-1 - min(push):] for i, j in zip(x, y)])
   return t[:VIV(-min(pop), len(t))] + result[0]
 
 def table(x, y, z, t):
+  if [] in [x, y]: raise ValueError('\'=\' requires two non-empty lists')
   pop = [findPop(z, t, [i, j], 2) for j in y for i in x]
   push = [findPush(z, t, [i, j], 1) for j in y for i in x]
   result = func.transpose([func.transpose([run(z, t + [i, j])[-1 - min(push):] for j in y])[0] for i in x])
@@ -291,7 +299,8 @@ def findSig(x, y):
     vals, func = findFunc(i, y)
     try: output = func[1](*[*vals, y])
     except: output = func[1](*vals)
-    if output[0] == None: continue
+    if output and output[0] == None: continue
+    output = [correctType(i) for i in output]
     pop += len(vals) - push
     push = max(0, push - len(vals)) + len(output)
     y = y[-len(vals):] + [*output]
@@ -302,7 +311,7 @@ def correctType(x):
     if math.isnan(x) or (type(x) is complex): return x
     elif type(x) is bool: return int(x)
     return int(x) if int(x) == x else x
-  elif all([type(_) == str and len(_) == 1 for _ in x]):
+  elif x and all([type(_) == str and len(_) == 1 for _ in x]):
     return ''.join(x)
   else: return x
   
