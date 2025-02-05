@@ -31,8 +31,11 @@ def parseLine(line):
         idx += 1;
         try: token += line[idx]
         except: raise SyntaxError(f"'{bracks[-1]}' was never closed")
-        if token[-1] in '{[': bracks += token[-1]
+        if token[-1] in '{[':
+          if len(token) > 1 and token[-2].isalpha() and token[-2].islower(): pass
+          else: bracks += token[-1]
         elif token[-1] in ']}':
+          # print(token, bracks, idx)
           if bracks[-1] + token[-1] not in ['[]', '{}']: raise SyntaxError(f"'{token[-1]}' != '{bracks[-1]}'")
           else: bracks.pop();
     elif token in ']}': raise SyntaxError(f"unmatched '{token}'")
