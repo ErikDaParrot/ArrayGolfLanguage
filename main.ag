@@ -1,4 +1,4 @@
-.; d.d|3600*+d>::N .; Current time
-.; 6#{;6#r?}% .; Random numbers
-{.#2>{%0>}%$<}::P .; Built-in primality check
-5 4 6#.{+++}=
+d.d|3600*+d>::N .; Current time
+6#{;6#r?}% .; Random numbers
+{.#2>{%0>}%1+$<}::P .; Built-in primality check
+0 4#{<}-
