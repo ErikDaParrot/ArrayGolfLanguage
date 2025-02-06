@@ -104,17 +104,15 @@ FUNCTIONS = {
     [a], lambda x: [[x]]
   ], '_~': [
     [f], lambda x: [(x > 0) - (x < 0)],
-    [S], lambda x: [x.swapcase()],
+    # [S], lambda x: [x.swapcase()],
   ], '_\\': [
     [f], lambda x: [math.sqrt(x.real**2 + x.imag**2)]
   ], '_<': [
     [f, f], lambda x, y: [min(x, y)],
-    [S], lambda x: [x.lower() if len(x) == 1 else func.suffix(x)],
     [A], lambda x: [func.suffix(x)]
   ], '_>': [
     [f, f], lambda x, y: [max(x, y)],
-    [S], lambda x: [x.upper() if len(x) == 1 else func.suffix(x)],
-    [A], lambda x: [func.prefix(x)]
+    [L], lambda x: [func.prefix(x)]
   ], '_#': [
     [I, I], lambda x, y: [list(range(x, y))],
     [L], lambda x: [list(np.array(x).shape)]
@@ -144,12 +142,12 @@ FUNCTIONS = {
     [f], lambda x: [math.ceil(x)]
   ], 'm~': [
     [f], lambda x: [round(x)]
-  ], 'mt': [
-    [f, I], lambda x, y: [func.trigonometry(y)[x]]
-  ], 'mE': [
-    [I], lambda x: [math.exp(x)]
   ], 'm!': [
     [f], lambda x: [math.gamma(x)]
+  ], 'mt': [
+    [f, I], lambda x, y: [func.trigonometry(x, y)]
+  ], 'mE': [
+    [I], lambda x: [math.exp(x)]
   ], 'mp': [
     [I], lambda x: [all(x % i > 0 for i in range(int(x ** 0.5) + 1)[2:])]
   ],
@@ -179,12 +177,16 @@ FUNCTIONS = {
   ], 's*': [
     [S, S], lambda x, y: [fold(x, (':', y, '+', ':', '+'), [], 0)],
     [L, a], lambda x, y: [fold(x, (':', y, '+', ':', '+'), [], 0)],
+  ], 's!': [
+    [S, S], lambda x, y: [x.replace(y, '')]
+  ], 's@': [
+    [S, I], lambda x, y: [[x.isalnum(), x.isalpha(), x.isalpha()][y] if 0 >= y >= 2 else None]
+  ], 's|': [
+    [S, I], lambda x, y: [[x.swapcase(), x.upper(), x.lower()][y] if 0 >= y >= 2 else None],
   ], 'sR': [
     [S, S], lambda x, y: [re.findall(y, x)]
   ], 'sr': [
     [S, S, S], lambda x, y, z: [x.replace(y, z)]
-  ], 's!': [
-    [S, S], lambda x, y: [x.replace(y, '')]
   ],
   # IN/OUT FUNCTIONS
   'p.': [
@@ -216,7 +218,7 @@ FUNCTIONS = {
 
 def run(tokens, stack):
   for token in tokens:
-    print(token, stack)
+    # print(token, stack)
     if str(token)[0] + str(token)[-1] == '""': stack += [token[1:-1]]
     elif type(token) == list: stack += [run(token, [])]
     elif str(token)[:2] == '::': vars[token[2]] = stack[-1]; stack.pop()
@@ -311,8 +313,8 @@ def correctType(x):
     if math.isnan(x) or (type(x) is complex): return x
     elif type(x) is bool: return int(x)
     return int(x) if int(x) == x else x
-  elif x and all([type(_) == str and len(_) == 1 for _ in x]):
-    return ''.join(x)
+  elif x and all([type(_) == str and len(_) == 1 for _ in x]): return ''.join(x)
+  elif type(x) == list: return [correctType(i) for i in x]
   else: return x
   
 # print(findSig(('+', 11), [1, 11]))
