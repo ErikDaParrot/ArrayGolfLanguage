@@ -5,8 +5,8 @@ A golfing programming language derived from GolfScript and many array programmin
 
 Examples:
 ```
-#{1+'**}%'\ns*p!       ==> creates a star triangle
-va._<vd++:{:?}-2/' s*  ==> blur the text code-golf problem¹
+#{1+'**}%'\ns*p!   ==> creates a star triangle
+{0s@}-2/' s*       ==> blur the text code-golf problem¹
 ```
 ¹code-golf problem [here](https://codegolf.stackexchange.com/questions/203893/bl-lu-ur-rr-ry-yv-vi-is-si-io-on-blur-the-text/278020#278020)
 
