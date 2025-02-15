@@ -10,7 +10,7 @@ toBase = lambda x, y: sum([j * y ** i for i, j in enumerate(x[::-1])])
 classify = lambda x: [dedup(x).index(i) for i in x]
 group = lambda x, y: [i for i, j in zip(x, y) if j] if max(y) <= 1 else \
   [[x[n] for n in [j for j, k in enumerate(y) if k == i]] \
-    for i in range(1, max(y) + 1)]
+    for i in range(1, max(y) + 1) if [x[n] for n in [j for j, k in enumerate(y) if k == i]]]
 resize = lambda x, y: np.resize(list(x), tuple(y)).tolist()
 select = lambda x, y: [np.array(x)[*([i] if type(i) is int else i)].tolist() for i in y]
 ravel = lambda x: np.ravel(x).tolist() if type(x) is list else x
@@ -43,3 +43,16 @@ def primesLess(n):
     p += 1
   prime = [p for p in range(2, n + 1) if prime[p]]
   return prime
+  
+def primeFactors(n):
+  factors = []
+  while n % 2 == 0:
+    factors += [2]
+    n = n // 2
+  for i in range(3, int(math.sqrt(n)) + 1, 2):
+    while n % i == 0:
+      factors += [i]
+      n = n // i
+  if n > 2:
+    factors += [n]
+  return factors
