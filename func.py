@@ -8,9 +8,9 @@ transpose = lambda x: [[[r[c] for r in x if c < len(r)] for c in range(0, max([l
 windows = lambda x, y: [x[i:i + y] for i in range(len(x) - y + 1)]
 toBase = lambda x, y: sum([j * y ** i for i, j in enumerate(x[::-1])])
 classify = lambda x: [dedup(x).index(i) for i in x]
-group = lambda x, y: [i for i, j in zip(x, y) if j] if max(y) <= 1 else \
-  [[x[n] for n in [j for j, k in enumerate(y) if k == i]] \
-    for i in range(1, max(y) + 1) if [x[n] for n in [j for j, k in enumerate(y) if k == i]]]
+keep = lambda x, y: [i for i, j in zip(x, y) if j] if max(y) <= 1 else []
+group = lambda x, y: [[x[n] for n in [j for j, k in enumerate(y) if k == i]] \
+  for i in range(max(y) + 1) if [x[n] for n in [j for j, k in enumerate(y) if k == i]]]
 resize = lambda x, y: np.resize(list(x), tuple(y)).tolist()
 select = lambda x, y: [np.array(x)[*([i] if type(i) is int else i)].tolist() for i in y]
 ravel = lambda x: np.ravel(x).tolist() if type(x) is list else x
@@ -32,6 +32,15 @@ def partition(x, y):
       else: p += [i]
   ap += [p] * (p != [])
   return ap[0] if max(y) == 1 else ap
+
+def partitions(x):
+  if len(x) > 0:
+    for i in range(1, len(x) + 1):
+      first, rest = x[:i], x[i:]
+      for p in partitions(rest):
+        yield [first] + p
+  else:
+    yield []
   
 def primesLess(n):
   prime = [True for i in range(n+1)]
