@@ -10,8 +10,8 @@ import calendar as cal
 f, I, S, L, F = [complex, float, int], [int], [str], [list], [tuple]
 s, A, i, N, a = [complex, float, int, str], [str, list], [int, list], [float, int, list], [complex, float, int, str, list]
 
-findPop = lambda x, y, z, t: max(0, findSig(x, y + z)[0] - t)
-findPush = lambda x, y, z, t: max(0, findSig(x, y + z)[1] - t)
+findPop = lambda x, y: max(0, findSig(x, y)[0])
+findPush = lambda x, y: max(0, findSig(x, y)[1])
 VIV = lambda x, y: x if x else y # VALUE IF VALUE IS NOT 'EMPTY'
 
 vars = {}
@@ -50,7 +50,7 @@ FUNCTIONS = {
     [A, L], lambda x, y: [func.partition(x, y)],
     [S], lambda x: [x.lower()],
     [A, F], lambda x, y, z: [fold(x, y, z, 0)],
-    [A, I, F], lambda x, y, z, t: [None, *run(['/', ('_~',) * bool(z) + z, '%'], t + [x, y])]
+    [A, I, F], lambda x, y, z, t: [None, *run(['/', ('\\', '_~',) * bool(z) + z, '%'], t + [x, y])]
   ], '%': [
     [f, f], lambda x, y: [x % y],
     [A], lambda x: [func.transpose(x)],
@@ -68,8 +68,7 @@ FUNCTIONS = {
     [S], lambda x, y: [None, *run(func.parse(x), y)]
   ], '~~': [
     [f], lambda x: [str(x)],
-    # [L], lambda x: [func.ravel(x)],
-    [S], lambda x, y: [None, *run(func.parse(x) + ['~'], y)]
+    [A, L], lambda x, y: [func.keep(x, y)],
   ], '|': [
     [f, f], lambda x, y: [x or y],
     [A, I], lambda x, y: [x[y:] + x[:y]],
@@ -167,6 +166,8 @@ FUNCTIONS = {
   'tp': [
     [f, f], lambda x, y: [math.perm(x, y)],
     [A, I], lambda x, y: [[list(i) for i in list(it.permutations(x, y))]]
+  ], 'tP': [
+    [A], lambda x: [[i for i in func.partitions(x)]]
   ], 'tc': [
     [f, f], lambda x, y: [math.comb(x, y)],
     [A, I], lambda x, y: [[list(i) for i in list(it.combinations(x, y))]]
@@ -233,7 +234,7 @@ FUNCTIONS = {
 
 def run(tokens, stack, debug = False):
   # print(stack)
-  if debug: print(tokens)
+  if debug: print('tokens:', tokens)
   for token in tokens:
     if str(token)[0] + str(token)[-1] == '""': stack += [token[1:-1]]
     elif type(token) == list: stack += [run(token, [])]
@@ -252,8 +253,8 @@ def run(tokens, stack, debug = False):
       except (ZeroDivisionError, ValueError) as e: result = [math.nan]
       stack += result
     else: stack += [token]
-    # print(token, stack)
-  if debug: print(stack)
+    if debug: print('t&s:', token, stack)
+  if debug: print('stack:', stack)
   return stack
 
 def findFunc(token, stack):
@@ -296,28 +297,33 @@ def doBoth(x, y, z): # x: func, y: func, z: stack
 def map(x, y, z): # x: arg, y: func, z: stack
   # print("map", x, y, z)
   if not x: return z + [x]
+  # print('stack:', z)
   # print('map:\n', repr(x), '\n', repr(y), '\n', repr(z))
-  pop = [findPop(y, z[:], [i], 1) for i in x]
-  push = [findPush(y, z[:], [i], 1) for i in x]
-  result = [run(y, z + [i])[-1 - max(push):] for i in x]
+  pop = max([findPop(y, z + [i]) for i in x])
+  push = max([findPush(y, z + [i]) for i in x])
+  pop, push = -pop if pop else len(z) + 1, -push if push else len(z)
+  # print('signature:', pop, push)
+  result = [run(y, z + [i])[push:] for i in x]
   result = func.transpose(result) if result else [[]]
-  pop, push = VIV(pop, [0]), VIV(push, [0])
-  return z[:VIV(-max(pop), len(z))] + result[0] if result else [[]]
+  return (z + [x])[:pop] + result[0] if result else [[]]
 
 def zipmap(x, y, z, t): # x, y: arg, z: func, t: stack
   if [] in [x, y]: raise ValueError('\'|\' requires two non-empty lists')
   if len(x) != len(y): raise ValueError('\'|\' requires two equal-length lists')
-  pop = [findPop(z, t[:], [i, j], 2) for i, j in zip(x, y)]
-  push = [findPush(z, t[:], [i, j], 1) for i, j in zip(x, y)]
-  result = func.transpose([run(z, t + [i, j])[-1 - max(push):] for i, j in zip(x, y)])
-  return t[:VIV(-max(pop), len(t))] + result[0]
+  pop = max([findPop(z, t + [i, j]) for i, j in zip(x, y)])
+  push = max([findPush(z, t + [i, j]) for i, j in zip(x, y)])
+  pop, push = -pop if pop else len(z) + 2, -push if push else len(z)
+  result = [run(z, t + [i, j])[push:] for i, j in zip(x, y)]
+  result = func.transpose(result) if result else [[]]
+  return (t + [x, y])[:pop] + result[0] if result else [[]]
 
 def table(x, y, z, t): # x, y: arg, z: func, t: stack
   if [] in [x, y]: raise ValueError('\'=\' requires two non-empty lists')
-  pop = [findPop(z, t[:], [i, j], 2) for j in y for i in x]
-  push = [findPush(z, t[:], [i, j], 1) for j in y for i in x]
-  result = func.transpose([func.transpose([run(z, t + [i, j])[-1 - max(push):] for j in y])[0] for i in x])
-  return t[:VIV(-max(pop), len(t))] + result[0]
+  pop = max([findPop(z, t + [i, j]) for j in y for i in x])
+  push = max([findPush(z, t + [i, j]) for j in y for i in x])
+  pop, push = -pop if pop else len(z) + 2, -push if push else len(z)
+  result = func.transpose([func.transpose([run(z, t + [i, j])[push:] for j in y])[0] for i in x])
+  return (t + [x, y])[:pop] + result[0] if result else [[]]
   
 def whileLoop(x, y, z): # x: func, y: cond, z: stack
   z = run(y, z)
@@ -335,7 +341,8 @@ def findSig(x, y): # x: func, y: stack
     vals, func = findFunc(i, y[:])
     if str(i) in '()':
       y = func[1](y)[1:]; continue
-    elif str(i)[0] == 'p': continue
+    elif str(i)[0] == 'p': 
+      pop += 1; continue
     else: 
       try: output = func[1](*[*vals, y])
       except: output = func[1](*vals)
@@ -356,5 +363,5 @@ def correctType(x):
   elif type(x) == list: return [correctType(i) for i in x]
   else: return x
   
-# print(findSig(('+', 11), [1, 11]))
+# print(findSig((11, 12), [1, 11]))
 # print(map([1, 2, 3], ('+', 11), [11]))
