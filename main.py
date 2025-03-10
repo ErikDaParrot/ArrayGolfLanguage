@@ -1,6 +1,7 @@
 import parse
 import os
 import sys
+from termcolor import colored, cprint
 
 def parseLine(line):
   tokens, token, idx = [], "", 0
@@ -28,17 +29,20 @@ def parseLine(line):
     elif token in '{[':
       bracks = [token];
       while bracks:
+        # print(token, bracks, idx)
         idx += 1;
         try: token += line[idx]
-        except: raise SyntaxError(f"'{bracks[-1]}' was never closed")
+        except: 
+          print(colored('SyntaxError: ', 'red', attrs = ['bold']) + colored(f'\'{bracks[-1]}\' was never closed.', 'red')); sys.exit(0)
         if token[-1] in '{[':
-          if len(token) > 1 and token[-2].isalpha() and token[-2].islower(): pass
-          else: bracks += token[-1]
+          bracks += token[-1]
         elif token[-1] in ']}':
-          # print(token, bracks, idx)
-          if bracks[-1] + token[-1] not in ['[]', '{}']: raise SyntaxError(f"'{token[-1]}' != '{bracks[-1]}'")
+          if bracks[-1] + token[-1] not in ['[]', '{}']: 
+            print(colored('SyntaxError: ', 'red', attrs = ['bold']) + colored(f'Unmatched \'{token[-1]}\'', 'red')); sys.exit(0)
           else: bracks.pop();
-    elif token in ']}': raise SyntaxError(f"unmatched '{token}'")
+      # print(token, bracks, idx)
+    elif token in ']}':
+      print(colored('SyntaxError: ', 'red', attrs = ['bold']) + colored(f'Unmatched \'{token[-1]}\'', 'red')); sys.exit(0)
     elif token in '()`': pass
     elif token == token.upper() and token.isalpha(): pass
     elif line[idx:idx + 2] == '::':
