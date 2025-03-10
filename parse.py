@@ -6,6 +6,8 @@ import itertools as it
 import time, re
 import datetime as dt
 import calendar as cal
+import sys
+from termcolor import colored, cprint
 
 f, I, S, L, F = [complex, float, int], [int], [str], [list], [tuple]
 s, A, i, N, a = [complex, float, int, str], [str, list], [int, list], [float, int, list], [complex, float, int, str, list]
@@ -36,7 +38,7 @@ FUNCTIONS = {
   ], '-': [
     [f, f], lambda x, y: [x - y],
     [A], lambda x: [func.classify(x)],
-    [A, F], lambda x, y, z: [None, *run([y + (0, '=', '!'), '%', x, ':', '*'], z + [x])]
+    [A, F], lambda x, y, z: [None, *run([y + (0, '=', '!'), '%', x, ':', '~~'], z + [x])]
   ], '*': [
     [f, f], lambda x, y: [x * y],
     [A, I], lambda x, y: [x * y],
@@ -234,7 +236,7 @@ FUNCTIONS = {
 
 def run(tokens, stack, debug = False):
   # print(stack)
-  if debug: print('tokens:', tokens)
+  if debug: print(colored('*Tokens:', 'yellow'), tokens)
   for token in tokens:
     if str(token)[0] + str(token)[-1] == '""': stack += [token[1:-1]]
     elif type(token) == list: stack += [run(token, [])]
@@ -245,16 +247,20 @@ def run(tokens, stack, debug = False):
     elif token in FUNCTIONS.keys():
       stackValues, function = findFunc(token, stack)
       try:
-        try: result = function[1](*[*stackValues, stack])
+        try: result = function[1](*stackValues, stack[:])
         except: result = function[1](*stackValues)
+          # except: 
+          #   print(tmc.colored('FuncError: ', 'red') + tmc.colored(f'\'{token}\' is not compatible with the stack.'))
+          #   print('{\n' + '\n'.join(['  ' + repr(i) for i in stack]) + '\n}')
+          #   sys.exit(1)
         if len(result) >= 1 and result[0] == None: 
           stack = []; result = result[1:]
         result = [correctType(i) for i in result]
       except (ZeroDivisionError, ValueError) as e: result = [math.nan]
       stack += result
     else: stack += [token]
-    if debug: print('t&s:', token, stack)
-  if debug: print('stack:', stack)
+    if debug: print(colored('*Token&Stack:', 'yellow'), tokens, stack)
+  if debug: print(colored('*Stack:', 'yellow'), stack)
   return stack
 
 def findFunc(token, stack):
@@ -267,7 +273,10 @@ def findFunc(token, stack):
     types = [x in y for x, y in zip(types, test[0])]
     if all(types): 
       function = test; break
-  if not function: raise ValueError(f"stack not compatible for '{token}'")
+  if not function:
+    print(colored('FuncError: ', 'red', attrs = ['bold']) + colored(f'\'{token}\' is not compatible with the stack.', 'red'))
+    print(colored('Debug:\n', 'yellow') + '{\n' + '\n'.join(['  ' + repr(i) for i in stack]) + '\n}')
+    sys.exit(0)
   return ([stack.pop() for _ in range(stackpops)][::-1], function)
   
 def fold(x, y, z, ac): # x: list, y: func, z: stack, s: accml?
@@ -295,35 +304,35 @@ def doBoth(x, y, z): # x: func, y: func, z: stack
   pass
   
 def map(x, y, z): # x: arg, y: func, z: stack
-  # print("map", x, y, z)
+  # print(colored('map', 'magenta'), x, y, z)
   if not x: return z + [x]
-  # print('stack:', z)
-  # print('map:\n', repr(x), '\n', repr(y), '\n', repr(z))
   pop = max([findPop(y, z + [i]) for i in x])
   push = max([findPush(y, z + [i]) for i in x])
-  pop, push = -pop if pop else len(z) + 1, -push if push else len(z)
-  # print('signature:', pop, push)
-  result = [run(y, z + [i])[push:] for i in x]
+  popat, pushat = -pop if pop else len(z), -push if push else len(z)
+  # print(colored('signature:', 'blue'), pop, push)
+  # print(colored('signature:', 'red'), popat, pushat)
+  result = [run(y, z + [i])[pushat:] for i in x]
   result = func.transpose(result) if result else [[]]
-  return (z + [x])[:pop] + result[0] if result else [[]]
+  # cprint('endmap', 'magenta')
+  return (z + [x])[:popat] + result[0]
 
 def zipmap(x, y, z, t): # x, y: arg, z: func, t: stack
   if [] in [x, y]: raise ValueError('\'|\' requires two non-empty lists')
   if len(x) != len(y): raise ValueError('\'|\' requires two equal-length lists')
   pop = max([findPop(z, t + [i, j]) for i, j in zip(x, y)])
   push = max([findPush(z, t + [i, j]) for i, j in zip(x, y)])
-  pop, push = -pop if pop else len(z) + 2, -push if push else len(z)
-  result = [run(z, t + [i, j])[push:] for i, j in zip(x, y)]
+  popat, pushat = -pop if pop else len(z), -push if push else len(z)
+  result = [run(z, t + [i, j])[pushat:] for i, j in zip(x, y)]
   result = func.transpose(result) if result else [[]]
-  return (t + [x, y])[:pop] + result[0] if result else [[]]
+  return (t + [x, y])[:popat] + result[0]
 
 def table(x, y, z, t): # x, y: arg, z: func, t: stack
   if [] in [x, y]: raise ValueError('\'=\' requires two non-empty lists')
   pop = max([findPop(z, t + [i, j]) for j in y for i in x])
   push = max([findPush(z, t + [i, j]) for j in y for i in x])
-  pop, push = -pop if pop else len(z) + 2, -push if push else len(z)
-  result = func.transpose([func.transpose([run(z, t + [i, j])[push:] for j in y])[0] for i in x])
-  return (t + [x, y])[:pop] + result[0] if result else [[]]
+  popat, pushat = -pop if pop else len(z), -push if push else len(z)
+  result = func.transpose([func.transpose([run(z, t + [i, j])[pushat:] for j in y])[0] for i in x])
+  return (t + [x, y])[:popat] + result[0] if result else [[]]
   
 def whileLoop(x, y, z): # x: func, y: cond, z: stack
   z = run(y, z)
@@ -332,26 +341,48 @@ def whileLoop(x, y, z): # x: func, y: cond, z: stack
   
 def findSig(x, y): # x: func, y: stack
   pop, push = 0, 0
+  # print(x, y)
   for i in x:
-    # print(i, y)
     if i == []:
       push += 1; y += [[]]; continue
     elif i not in FUNCTIONS.keys():
       push += 1; y += run([i], []); continue
-    vals, func = findFunc(i, y[:])
-    if str(i) in '()':
-      y = func[1](y)[1:]; continue
+    vals, f = findFunc(i, y[:])
+    # print(colored('debug:', 'green', attrs=['bold']), i, vals)
+    containsFunc = [type(j) == tuple for j in vals]
+    if any(containsFunc) and i in '%|': # modifiers
+      if i == '%':
+        mapf = y[-1]; arg = y[-2]; y = y[:-2]
+        pop = max([findPop(mapf, y + [j]) for j in arg])
+        push = max([findPush(mapf, y + [j]) for j in arg])
+        popat, pushat = -pop if pop else len(y), -push if push else len(y)
+        output = [run(mapf, y + [j])[pushat:] for j in arg]
+        output = func.transpose(output) if output else [[]]
+        vals = (y + [arg])[popat:]
+      elif i == '|':
+        mapf = y[-1]; argx = y[-3], argy = y[-2]; y = y[:-3]
+        if [] in [argx, argy]: raise ValueError('\'|\' requires two non-empty lists')
+        if len(argx) != len(argy): raise ValueError('\'|\' requires two equal-length lists')
+        pop = max([findPop(mapf, y + [j, k]) for j, k in zip(argx, argy)])
+        push = max([findPush(mapf, y + [j, k]) for j, k in zip(argx, argy)])
+        popat, pushat = -pop if pop else len(y), -push if push else len(y)
+        result = [run(mapf, y + [j, k])[pushat:] for j, k in zip(argx, argy)]
+        result = func.transpose(result) if result else [[]]
+        return (y + [argx, argy])[:popat] + result[0]
+    elif str(i) in '()':
+      y = f[1](y)[1:]; continue
     elif str(i)[0] == 'p': 
       pop += 1; continue
-    else: 
-      try: output = func[1](*[*vals, y])
-      except: output = func[1](*vals)
+    else:
+      try: output = f[1](*vals, y)
+      except: output = f[1](*vals)
     if output and output[0] == None: continue
     output = [correctType(i) for i in output]
+    # print(colored('debug2:', 'magenta', attrs=['bold']), vals, output)
     pop += len(vals) - push
     push = max(0, push - len(vals)) + len(output)
-    y = y[:-len(vals)] + [*output]
-    # print('after:', i, y, pop, push, len(vals), len(output))
+    y = y[:-len(vals)] + output
+    # print(colored(y, 'yellow', attrs=['bold']))
   return pop, push
   
 def correctType(x):
@@ -363,5 +394,5 @@ def correctType(x):
   elif type(x) == list: return [correctType(i) for i in x]
   else: return x
   
-# print(findSig((11, 12), [1, 11]))
+# print(findSig(((('+',), '%'), '%'), [3, [[1, 2], [11, 3]]]))
 # print(map([1, 2, 3], ('+', 11), [11]))
