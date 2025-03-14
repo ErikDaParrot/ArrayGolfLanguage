@@ -1,6 +1,0 @@
-.; d.d|3600*+d>::N .; Current time
-.; [{6#r?}6*] .; Random numbers
-.; {.#2>{%0>}%1+$<}::P .; Built-in primality check
-{#{.~~:.3%0="Fizz"*:5%0="Buzz"*+.)&(""=!@p!}%}::F .; FizzBuzz
-.; "CODEGOLF".s#2{>!}/0:+{+}\*
-.; "ABC"2/{{s#1+s#}%}%
