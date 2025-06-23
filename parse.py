@@ -19,11 +19,12 @@ vars = {}
 CONSTANTS = {
   'A': 'abcdefghijklmnopqrstuvwxyz',
   'D': '0123456789',
-  'PR': func.primesLess(1000005),
-  'P': math.pi,
-  'E': math.e,
   'dR': 180 / math.pi,
-  'FB': 'FizzBuzz'
+  'E': math.e,
+  'FB': 'FizzBuzz',
+  'I': float('inf'),
+  'P': math.pi,
+  'PR': func.primesLess(1000005),
 }
 
 FUNCTIONS = {
@@ -48,22 +49,23 @@ FUNCTIONS = {
   ], '/': [
     [f, f], lambda x, y: [x / y],
     # [A, [I, L]], lambda x, y: [func.windows(x, y)],
+    [A, I], lambda x, y: [func.smallWindows(x, y)],
     [A, L], lambda x, y: [func.partition(x, y)],
     [S], lambda x: [x.lower()],
     [A, F], lambda x, y, z: [fold(x, y, z, 0)],
-    # [A, [I, L], F], lambda x, y, z, t: [None, *run(['/', ('\\', '_~',) * bool(z) + z, '%'], t + [x, y])]
+    [A, I, F], lambda x, y, z, t: [None, *run(['/', ('\\', '`',) * bool(z) + z, '%'], t + [x, y])]
   ], '%': [
     [f, f], lambda x, y: [x % y],
     [A], lambda x: [func.transpose(x)],
     # [A, F], lambda x, y, z: [None, *map(x, y, z)],
     # [A, F], lambda x, y: [[run(y, [i])[0] for i in x]],
-    [A, F], lambda x, y: [[run(y, [i])[-1] for i in x if run(y, [i])]] if [[run(y, [i])[-1] for i in x if run(y, [i])]] != [[]] else []
+    [A, F], lambda x, y: map(x, y)
   ], 
   '%%': [ # ⁒
     # [f, f], lambda x, y, z: [None, *run(['%', '%'], z + [x, y])],
-    [A, I + L], lambda x, y: [func.windows(x, y)],
+    [L, I + L], lambda x, y: [func.windows(x, y)],
     # [A, L], lambda x, y: [func.partition(x, y)]
-    [A, I + L, F], lambda x, y, z, t: [None, *run(['%%', ('\\', '_~',) * bool(z) + z, '%'], t + [x, y])]
+    [A, I + L, F], lambda x, y, z, t: [None, *run(['%%', ('\\', '`',) * bool(z) + z, '%'], t + [x, y])]
     # [A, F], lambda x, y, z: [None, *run(['%', '%'], z + [x, y])]
   ], 
   '^': [
@@ -85,23 +87,27 @@ FUNCTIONS = {
     [A, I], lambda x, y: [x[y:] + x[:y]],
     [A, L], lambda x, y: [func.reshape(x, y)],
     [S], lambda x: [x.upper()],
-    [A, A, F], lambda x, y, z, t: [None, *zipmap(x, y, z, t)]
+    # [A, A, F], lambda x, y, z, t: [None, *zipmap(x, y, z, t)]
+    [A, A, F], lambda x, y, z: zipmap(x, y, z),
   ], '|~': [
-    [A, I], lambda x, y: [x[:y], x[y:]]
+    [A, I], lambda x, y: [x[:y], x[y:]],
+    [A, L], lambda x, y: [func.partEnclose(x, y)],
   ], '<': [
     [f, f], lambda x, y: [x < y],
     [A, I], lambda x, y: [x[:y]],
     [A], lambda x: [x[0]], 
-    [F], lambda x, y: [None, *keepArgs(x, y[:-1], -1)]
+    # [F], lambda x, y: [None, *keepArgs(x, y[:-1], -1)]
   ], '>': [
     [f, f], lambda x, y: [x > y],
     [A, I], lambda x, y: [x[y:]],
     [A], lambda x: [x[-1]],
-    [F], lambda x, y: [None, *keepArgs(x, y[:-1], 1)]
+    # [F], lambda x, y: [None, *keepArgs(x, y[:-1], 1)]
   ], '=': [
     [a, a], lambda x, y: [x == y],
-    [a, F, F], lambda x, y, z, t: [None, *fork(x, y, z, t)],
-    [A, A, F], lambda x, y, z, t: [None, *table(x, y, z, t)],
+    # [a, F, F], lambda x, y, z, t: [None, *fork(x, y, z, t)],
+    # [A, A, F], lambda x, y, z, t: [None, *table(x, y, z, t)],
+    [a, F, F], lambda x, y, z: fork(x, y, z),
+    [A, A, F], lambda x, y, z: [table(x, y, z)],
   ], '\\': [
     [f], lambda x: [1 / x],
     [A], lambda x: [x[::-1]],
@@ -120,7 +126,8 @@ FUNCTIONS = {
     [I, F, F], lambda x, y, z, t: [None, *(run(y, t[:-3]) if x else run(z, t[:-3]))]
   ], '&': [
     [a, a], lambda x, y: [[x, y]],
-    [a, a, F], lambda x, y, z, t: [None, *both(x, y, z, t)],
+    # [a, a, F], lambda x, y, z, t: [None, *both(x, y, z, t)]
+    [a, a, F], lambda x, y, z: both(x, y, z),
   ], '#': [
     [I], lambda x: [list(range(x))],
     [A], lambda x: [len(x)],
@@ -183,7 +190,8 @@ FUNCTIONS = {
     [], lambda z: [None, *(z[-3:] + [z[-1], z[-3], z[-2]] if len(z) > 2 else z[-2:] + [z[-1], z[-2]])]
   ], 
   '`': [
-    [I], lambda x, y: [y[-x - 1]]
+    [I], lambda x, y: [y[-x - 1]],
+    [A], lambda x: [*x]
   ], 
   ## EXTERNAL FUNCTIONS
   # MATH FUNCTIONS
@@ -224,7 +232,7 @@ FUNCTIONS = {
     [S], lambda x: [[ord(i) for i in x] if len(x) > 1 else ord(x)],
     [L], lambda x: [chr(i) for i in x],
   ], 's@': [
-    [S, I], lambda x, y: [[x.isalnum(), x.isalpha(), x.isdigit()][y] if 0 >= y >= 2 else None]
+    [S, I], lambda x, y: [[x.isalnum(), x.isalpha(), x.isdigit()][y] if 0 <= y <= 2 else None]
   ], 'sr!': [
     [S, S, S], lambda x, y, z: [re.sub(y, z, x)]
   ], 'sr-': [
@@ -258,7 +266,7 @@ FUNCTIONS = {
   'r~': [
     [], lambda x: [random.random()],
   ], 'r#': [
-    [I, I], lambda x: [random.randint(0, x)],
+    [I], lambda x: [random.randint(0, x)],
   ], 'r-': [
     [I, I], lambda x, y: [random.randint(x, y)],
   ], 'r?': [
@@ -280,7 +288,9 @@ def run(tokens, stack, debug = False):
     elif type(token) == tuple: stack += [token]
     elif str(token)[:2] == '::': vars[token[2:]], stack = stack[-1], stack[:-1]
     elif str(token).isupper() and str(token).isalpha(): 
-      if token in vars.keys(): stack += [vars[token]]
+      if token in vars.keys(): 
+        if type(vars[token]) != tuple: stack += [vars[token]]
+        else: stack = run(vars[token], stack[:])
       else: vars[token], stack = stack[-1], stack[:-1]
     elif type(token) == str and token[0] == 'v': stack += [CONSTANTS[token[1:]]]
     elif token in FUNCTIONS.keys() or (type(token) == str and len(token) > 1 and all([i in FUNCTIONS.keys() for i in token])):
@@ -364,92 +374,100 @@ def fold(x, y, z, ac): # x: list, y: func, z: stack, s: accml?
     r = run(y, z + x[:2])[-1]; x = [r] + x[2:]; a += [r]
   return a if ac else x[0]
   
-def keepArgs(x, y, p): # x: func, y: stack, p: place (1: above, 0: below) 
-  pop, push = findSig(x, y[:])
-  out = run(x, y[:])
-  # print(x, y, out)
-  return (y[:-pop] + out[-push:] + y[-pop:]) if p == 1 else (y + out[-push:])
+# def keepArgs(x, y, p): # x: func, y: stack, p: place (1: above, 0: below) 
+#   pop, push = findSig(x, y[:])
+#   out = run(x, y[:])
+#   # print(x, y, out)
+#   return (y[:-pop] + out[-push:] + y[-pop:]) if p == 1 else (y + out[-push:])
   
 ## BOTH ##
-def both(x, y, z, t): # x: arg, y: arg, z: func, t: stack
-  pop, _, _, output = sign_both(x, y, z, t)
-  t += [x, y]
-  return t[:-pop if pop else len(t)] + output
+def both(x, y, z, t = []): # x: arg, y: arg, z: func, t: stack
+  # pop, _, _, output = sign_both(x, y, z, t)
+  # t += [x, y]
+  # return t[:-pop if pop else len(t)] + output
+  return run(z, [x]) + run(z, [y])
 
-def sign_both(x, y, z, t): # x: arg, y: arg, z: func, t: stack
-  popx, popy = findPop(z, t + [x]), findPop(z, t + [y])
-  pushx, pushy = findPush(z, t + [x]), findPush(z, t + [y])
-  # print(pop, pushy, pushz)
-  pop, push = popx + popy, pushx + pushy
-  popat, pushxat, pushyat = -pop if pop else len(t) + 1, -pushx if pushx else len(t) + 1, -pushy if pushy else len(t) + 1
-  vals = (t + [x, y])[popat:]
-  output = run(z, t + [x])[pushxat:] + run(z, t + [y])[pushyat:]
-  # print(output)
-  return pop, pushx + pushy, vals, output
+# def sign_both(x, y, z, t): # x: arg, y: arg, z: func, t: stack
+#   popx, popy = findPop(z, t + [x]), findPop(z, t + [y])
+#   pushx, pushy = findPush(z, t + [x]), findPush(z, t + [y])
+#   # print(pop, pushy, pushz)
+#   pop, push = popx + popy, pushx + pushy
+#   popat, pushxat, pushyat = -pop if pop else len(t) + 1, -pushx if pushx else len(t) + 1, -pushy if pushy else len(t) + 1
+#   vals = (t + [x, y])[popat:]
+#   output = run(z, t + [x])[pushxat:] + run(z, t + [y])[pushyat:]
+#   # print(output)
+#   return pop, pushx + pushy, vals, output
   
 ## FORK ##
-def fork(x, y, z, t): # x: arg, y: func, z: func, t: stack
-  pop, _, _, output = sign_fork(x, y, z, t)
-  t += [x]
-  return t[:-pop if pop else len(t)] + output
+def fork(x, y, z, t = []): # x: arg, y: func, z: func, t: stack
+  # pop, _, _, output = sign_fork(x, y, z, t)
+  # t += [x]
+  # return t[:-pop if pop else len(t)] + output
+  return run(y, [x]) + run(z, [x])
   
-def sign_fork(x, y, z, t): # x: arg, y: func, z: func, t: stack
-  pop = max(findPop(y, t + [x]), findPop(z, t + [x]))
-  pushy, pushz = findPush(y, t + [x]), findPush(z, t + [x])
-  # print(pop, pushy, pushz)
-  popat, pushyat, pushzat = -pop if pop else len(t) + 1, -pushy if pushy else len(t) + 1, -pushz if pushz else len(t) + 1
-  vals = (t + [x])[popat:]
-  output = run(y, t + [x])[pushyat:] + run(z, t + [x])[pushzat:]
-  return pop, pushy + pushz, vals, output
+# def sign_fork(x, y, z, t): # x: arg, y: func, z: func, t: stack
+#   pop = max(findPop(y, t + [x]), findPop(z, t + [x]))
+#   pushy, pushz = findPush(y, t + [x]), findPush(z, t + [x])
+#   # print(pop, pushy, pushz)
+#   popat, pushyat, pushzat = -pop if pop else len(t) + 1, -pushy if pushy else len(t) + 1, -pushz if pushz else len(t) + 1
+#   vals = (t + [x])[popat:]
+#   output = run(y, t + [x])[pushyat:] + run(z, t + [x])[pushzat:]
+#   return pop, pushy + pushz, vals, output
 
 ## MAP ##
-def map(x, y, z): # x: arg, y: func, z: stack
-  pop, _, _, output = sign_map(x, y, z)
-  # print([findPop(y, z + [i]) for i in x])
-  # print([findPush(y, z + [i]) for i in x])
-  z += [x]
-  # print(pop, push, y, z, output)
-  # print("endmap")
-  return z[:-pop if pop else len(z)] + output
+def map(x, y, z = []): # x: arg, y: func, z: stack
+  # pop, _, _, output = sign_map(x, y, z)
+  # # print([findPop(y, z + [i]) for i in x])
+  # # print([findPush(y, z + [i]) for i in x])
+  # z += [x]
+  # # print(pop, push, y, z, output)
+  # # print("endmap")
+  # return z[:-pop if pop else len(z)] + output
+  i = [a[-1] for i in x if (a := run(y, [i]))]
+  return [i] * (i != [])
   
-def sign_map(x, y, z): # x: arg, y: func, z: stack
-  if x == []: return 0, 0, [y], []
-  pop = max([findPop(y, z + [i]) for i in x])
-  push = max([findPush(y, z + [i]) for i in x])
-  print(pop, push)
-  popat, pushat = -pop if pop else len(z) + 1, -push if push else len(z) + 1
-  vals = (z + [x])[popat:]
-  output = [run(y, z + [i])[pushat:] for i in x]
-  # output = output if push else [[]]
-  output = func.transpose(output) if output else []
-  return pop, push, vals, output
+# def sign_map(x, y, z): # x: arg, y: func, z: stack
+#   if x == []: return 0, 0, [y], []
+#   pop = max([findPop(y, z + [i]) for i in x])
+#   push = max([findPush(y, z + [i]) for i in x])
+#   print(pop, push)
+#   popat, pushat = -pop if pop else len(z) + 1, -push if push else len(z) + 1
+#   vals = (z + [x])[popat:]
+#   output = [run(y, z + [i])[pushat:] for i in x]
+#   # output = output if push else [[]]
+#   output = func.transpose(output) if output else []
+#   return pop, push, vals, output
   
 ## ZIPMAP ##
-def zipmap(x, y, z, t): # x, y: arg, z: func, t: stack
-  pop, _, _, output = sign_zipmap(x, y, z, t)
-  t += [x, y]
-  return t[:-pop if pop else len(t)] + output[0]
+def zipmap(x, y, z, t = []): # x, y: arg, z: func, t: stack
+  # pop, _, _, output = sign_zipmap(x, y, z, t)
+  # t += [x, y]
+  # return t[:-pop if pop else len(t)] + output[0]
+  i = [a[-1] for i, j in zip(x, y) if (a := run(z, [i, j]))]
+  return [i] * (i != [])
   
-def sign_zipmap(x, y, z, t): # x: arg, y: arg, z: func, t: stack
-  if [] in [x, y]: raise ValueError('\'|\' requires two non-empty lists')
-  if len(x) != len(y): raise ValueError('\'|\' requires two equal-length lists')
-  pop = max([findPop(z, t + [i, j]) for i, j in zip(x, y)])
-  push = max([findPush(z, t + [i, j]) for i, j in zip(x, y)])
-  popat, pushat = -pop if pop else len(t) + 2, -push if push else len(t) + 2
-  vals = (t + [x, y])[popat:]
-  output = [run(z, t + [i, j])[pushat:] for i, j in zip(x, y)]
-  # output = output if push else [[]]
-  output = func.transpose(output) if output else []
-  return pop, push, vals, output
+# def sign_zipmap(x, y, z, t): # x: arg, y: arg, z: func, t: stack
+#   if [] in [x, y]: raise ValueError('\'|\' requires two non-empty lists')
+#   if len(x) != len(y): raise ValueError('\'|\' requires two equal-length lists')
+#   pop = max([findPop(z, t + [i, j]) for i, j in zip(x, y)])
+#   push = max([findPush(z, t + [i, j]) for i, j in zip(x, y)])
+#   popat, pushat = -pop if pop else len(t) + 2, -push if push else len(t) + 2
+#   vals = (t + [x, y])[popat:]
+#   output = [run(z, t + [i, j])[pushat:] for i, j in zip(x, y)]
+#   # output = output if push else [[]]
+#   output = func.transpose(output) if output else []
+#   return pop, push, vals, output
   
 ## TABLE ##
-def table(x, y, z, t): # x, y: arg, z: func, t: stack
-  if [] in [x, y]: raise ValueError('\'=\' requires two non-empty lists')
-  pop = max([findPop(z, t + [i, j]) for j in y for i in x])
-  push = max([findPush(z, t + [i, j]) for j in y for i in x])
-  popat, pushat = -pop if pop else len(z), -push if push else len(z)
-  result = func.transpose([func.transpose([run(z, t + [i, j])[pushat:] for j in y]) for i in x])
-  return (t + [x, y])[:popat] + result if result else [[]]
+def table(x, y, z, t = 0): # x, y: arg, z: func, t: stack
+  # if [] in [x, y]: raise ValueError('\'=\' requires two non-empty lists')
+  # pop = max([findPop(z, t + [i, j]) for j in y for i in x])
+  # push = max([findPush(z, t + [i, j]) for j in y for i in x])
+  # popat, pushat = -pop if pop else len(z), -push if push else len(z)
+  # result = func.transpose([func.transpose([run(z, t + [i, j])[pushat:] for j in y]) for i in x])
+  # return (t + [x, y])[:popat] + result if result else [[]]
+  i = [a[-1] for i in x for j in y if (a := run(z, [i, j]))]
+  return [i] * (i != [])
   
 def forLoop(x, y, z): # x: func, y: int, z: stack
   return run(x * y, z)
@@ -459,102 +477,103 @@ def whileLoop(x, y, z): # x: func, y: cond, z: stack
   while z[-1]: z = run(y, run(x, z[:-1]))
   return z[:-1]
   
-def findSig(x, y): # x: func, y: stack
-  pop, push = 0, 0
-  # print(x, y)
-  for i in x:
-    # print(colored('debug2:', 'magenta', attrs=['bold']), pop, push, y)
-    # print(i, y)
-    if type(i) == list: 
-      pop_, push_ = findSig(i, y[:])
-      y = run(i, y)
-      # y[:-pop_ if pop_ else len(y)] + [run(i, y[:])[-push_ if push_ else len(y):]]
-      pop += max(0, -pop_ - push)
-      push = max(0, push + pop_) + push_
-      # print(pop, push, i, y)
-      continue
-    elif str(i)[:2] == '::':
-      vars[i[2]] = y[-1]; y.pop(); 
-      # print(pop, push, i, y) 
-      continue
-    elif str(i).isupper() and str(i).isalpha(): 
-      push += 1; y += [vars[i]]; 
-      # print(pop, push, i, y)
-      continue
-    elif i not in FUNCTIONS.keys():
-      push += 1; y += run([i], []); 
-      # print(pop, push, i, y)
-      continue
-    try: vals, f = findFunc(i, y[:])
-    except:
-      pop_, push_ = findSig(list(i), y[:])
-      if pop_: 
-        pop += max(0, pop_ - push)
-        push = max(0, push - pop_) + push_
-      y = run(list(i), y)
-      continue
-    # if (vals, f) == (None, None):
-    #   print(colored('FuncError: ', 'red', attrs = ['bold']) + colored(f'\'{i}\' is not compatible with the stack.', 'red'))
-    #   print(colored('Debug:\n', 'yellow') + func.printData(stack))
-    #   sys.exit(0)
-    # print(colored('debug:', 'green', attrs=['bold']), i, vals)
-    # print(vals, f, i)
-    containsFunc = [type(j) == tuple for j in vals]
-    if any(containsFunc) and (i in ['%', '|', '=', '<', '>', '*', '?', '!']): # modifiers
-      if i == '%':
-        # print("hi")
-        pop_, push_, vals, output = sign_map(y[-2], y[-1], y[:-2])
-        # cprint(f'{pop_} {push_} {vals} {output}', 'green')
-      elif i == '|':
-        _, _, vals, output = sign_zipmap(y[-3], y[-2], y[-1], y[:-3])
-      elif i == '*':
-        if type(y[-1]) == int:
-          mapf = y[-2]; arg = y[-1]; y = y[:-2]; z = y
-          pop_ = findPop(mapf * arg, y[:])
-          push_ = findPush(mapf * arg, y[:])
-          popat, pushat = -pop_ if pop_ else len(y), -push_ if push_ else len(y)
-          for _ in range(arg): 
-            print(mapf, y); y = run(mapf, y, True)
-          print(mapf, y)
-          output, vals = y[pushat:], z[popat:]
-      elif i == '!':
-        mapf = y[-1]; y = y[:-1]; z = y
-        pop_ = findPop(mapf, y[:])
-        push_ = findPush(mapf, y[:])
-        popat, pushat = -pop_ if pop_ else len(y), -push_ if push_ else len(y)
-        # print(mapf, y)
-        # print(pop_, push_)
-        y = run(mapf, y[:])
-        output, vals = y[pushat:], z[popat:]
-      elif i == '?':
-        pass
-      push -= sum(containsFunc)
-    elif str(i) in '()':
-      # print("mod", y, pop, push)
-      y = f(y)[1:];
-      continue
-    elif str(i)[0] == 'p':
-      output = [] if i in ['p.', 'p!'] else ["0"]
-    else:
-      try: output = f(*vals, y)
-      except: output = f(*vals)
-    if output and output[0] == None: continue
-    output = [correctType(i) for i in output]
-    # print(pop, push, i, y)
-    # print(colored('debug2:', 'yellow', attrs=['bold']), vals, output)
-    if vals: 
-      pop += max(0, len(vals) - push)
-      push = max(0, push - len(vals)) + len(output)
-    y = y[:-len(vals) if len(vals) else len(y)] + output
-    # print(colored(y, 'yellow', attrs=['bold']))
-  # print(colored('debug2:', 'magenta', attrs=['bold']), pop, push, y)
-  # print(pop, push, i, y)
-  return pop, push
+# def findSig(x, y): # x: func, y: stack
+#   pop, push = 0, 0
+#   # print(x, y)
+#   for i in x:
+#     # print(colored('debug2:', 'magenta', attrs=['bold']), pop, push, y)
+#     # print(i, y)
+#     if type(i) == list: 
+#       pop_, push_ = findSig(i, y[:])
+#       y = run(i, y)
+#       # y[:-pop_ if pop_ else len(y)] + [run(i, y[:])[-push_ if push_ else len(y):]]
+#       pop += max(0, -pop_ - push)
+#       push = max(0, push + pop_) + push_
+#       # print(pop, push, i, y)
+#       continue
+#     elif str(i)[:2] == '::':
+#       vars[i[2]] = y[-1]; y.pop(); 
+#       # print(pop, push, i, y) 
+#       continue
+#     elif str(i).isupper() and str(i).isalpha(): 
+#       push += 1; y += [vars[i]]; 
+#       # print(pop, push, i, y)
+#       continue
+#     elif i not in FUNCTIONS.keys():
+#       push += 1; y += run([i], []); 
+#       # print(pop, push, i, y)
+#       continue
+#     try: vals, f = findFunc(i, y[:])
+#     except:
+#       pop_, push_ = findSig(list(i), y[:])
+#       if pop_: 
+#         pop += max(0, pop_ - push)
+#         push = max(0, push - pop_) + push_
+#       y = run(list(i), y)
+#       continue
+#     # if (vals, f) == (None, None):
+#     #   print(colored('FuncError: ', 'red', attrs = ['bold']) + colored(f'\'{i}\' is not compatible with the stack.', 'red'))
+#     #   print(colored('Debug:\n', 'yellow') + func.printData(stack))
+#     #   sys.exit(0)
+#     # print(colored('debug:', 'green', attrs=['bold']), i, vals)
+#     # print(vals, f, i)
+#     containsFunc = [type(j) == tuple for j in vals]
+#     if any(containsFunc) and (i in ['%', '|', '=', '<', '>', '*', '?', '!']): # modifiers
+#       if i == '%':
+#         # print("hi")
+#         pop_, push_, vals, output = sign_map(y[-2], y[-1], y[:-2])
+#         # cprint(f'{pop_} {push_} {vals} {output}', 'green')
+#       elif i == '|':
+#         _, _, vals, output = sign_zipmap(y[-3], y[-2], y[-1], y[:-3])
+#       elif i == '*':
+#         if type(y[-1]) == int:
+#           mapf = y[-2]; arg = y[-1]; y = y[:-2]; z = y
+#           pop_ = findPop(mapf * arg, y[:])
+#           push_ = findPush(mapf * arg, y[:])
+#           popat, pushat = -pop_ if pop_ else len(y), -push_ if push_ else len(y)
+#           for _ in range(arg): 
+#             print(mapf, y); y = run(mapf, y, True)
+#           print(mapf, y)
+#           output, vals = y[pushat:], z[popat:]
+#       elif i == '!':
+#         mapf = y[-1]; y = y[:-1]; z = y
+#         pop_ = findPop(mapf, y[:])
+#         push_ = findPush(mapf, y[:])
+#         popat, pushat = -pop_ if pop_ else len(y), -push_ if push_ else len(y)
+#         # print(mapf, y)
+#         # print(pop_, push_)
+#         y = run(mapf, y[:])
+#         output, vals = y[pushat:], z[popat:]
+#       elif i == '?':
+#         pass
+#       push -= sum(containsFunc)
+#     elif str(i) in '()':
+#       # print("mod", y, pop, push)
+#       y = f(y)[1:];
+#       continue
+#     elif str(i)[0] == 'p':
+#       output = [] if i in ['p.', 'p!'] else ["0"]
+#     else:
+#       try: output = f(*vals, y)
+#       except: output = f(*vals)
+#     if output and output[0] == None: continue
+#     output = [correctType(i) for i in output]
+#     # print(pop, push, i, y)
+#     # print(colored('debug2:', 'yellow', attrs=['bold']), vals, output)
+#     if vals: 
+#       pop += max(0, len(vals) - push)
+#       push = max(0, push - len(vals)) + len(output)
+#     y = y[:-len(vals) if len(vals) else len(y)] + output
+#     # print(colored(y, 'yellow', attrs=['bold']))
+#   # print(colored('debug2:', 'magenta', attrs=['bold']), pop, push, y)
+#   # print(pop, push, i, y)
+#   return pop, push
   
 def correctType(x):
   if type(x) in f + [bool]:
     if math.isnan(x) or (type(x) is complex): return x
     elif type(x) is bool: return int(x)
+    elif abs(x) == float('inf'): return x
     return int(x) if int(x) == x else x
   elif type(x) == list:
     if len(x) == 0: return x
