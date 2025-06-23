@@ -5,14 +5,14 @@ A golfing programming language derived from GolfScript and many array programmin
 
 Examples:
 ```
-#{1+'**}%'\ns*p!                              ==> creates a star triangle
-{0s@}-2/' s*                                  ==> blur the text code-golf problem¹
-{.~~:.3%0="Fizz"*:5%0="Buzz"*+.)&(""=!@p!}%   ==> fizzbuzz!
+#{1+'**}%'\ns*p!                          ==> creates a star triangle
+‘0s@-2/' $$                               ==> blur the text code-golf problem¹
+#{1+.‘3%‘5%=‘0=&&vFB2\#:*‘+/:$&‘#$>p!}%   ==> fizzbuzz!
 ```
 ¹code-golf problem [here](https://codegolf.stackexchange.com/questions/203893/bl-lu-ur-rr-ry-yv-vi-is-si-io-on-blur-the-text/278020#278020)
 
 # Running
-Just download the source code and python (if not already installed), and then run *main.py* from the command line.
+Just download the source code and Python (if not already installed), and then run *main.py* from the command line.
 ```
 Arguments:
 python3 main.py <file-name> ==> run file
