@@ -3,7 +3,7 @@ import os, sys
 import numpy as np
 from termcolor import colored, cprint
 
-def parseLine(line):
+def parseLine(line, reach = 0):
   tokens, token, idx = [], "", 0
   if line.isspace() or line == '': return []
   while True:
@@ -42,8 +42,7 @@ def parseLine(line):
         except: 
           print(colored('SyntaxError: ', 'red', attrs = ['bold']) + colored(f'\'{bracks[-1]}\' was never closed', 'red')); sys.exit(0)
         if token[-2:] not in list(parse.FUNCTIONS.keys()):
-          if token[-1] in '{[':
-            bracks += token[-1]
+          if token[-1] in '{[': bracks += token[-1]
           elif token[-1] in ']}':
             if bracks[-1] + token[-1] not in ['[]', '{}'] and token[-2:] not in list(parse.FUNCTIONS.keys()): 
               print(colored('SyntaxError: ', 'red', attrs = ['bold']) + colored(f'Unmatched \'{token[-1]}\'', 'red')); sys.exit(0)
@@ -51,16 +50,44 @@ def parseLine(line):
       # print(token, bracks, idx)
     elif token in ']}':
       print(colored('SyntaxError: ', 'red', attrs = ['bold']) + colored(f'Unmatched \'{token[-1]}\'', 'red')); sys.exit(0)
-    elif token in '()`': pass
-    elif token == token.upper() and token.isalpha(): pass
+    elif token == '‘':
+      token = ''.join([str(i) if type(i) == int else i for i in parseLine(line[idx + 1:], 1)])
+      idx += len(token)
+      token = '{' + token + '}'
+    elif token == '’':
+      token = parseLine(line[idx + 1:], 2)[0]
+      token = str(token) if type(token) == int else token
+      idx += len(token)
+      token = '{' + token + '}'
+    elif token.isupper(): 
+      while token.isupper() and token.isalpha():
+        idx += 1
+        try: token += line[idx]
+        except: token += ' '; break
+      idx -= 1; token = token[:-1]
     elif line[idx:idx + 2] == '::':
-      token = line[idx:idx + 3]; idx += 2
-    elif token in [' ', '\n']:
+      idx += 2; token = line[idx]
+      while token.isupper() and token.isalpha():
+        idx += 1
+        try: token += line[idx]
+        except: token += ' '; break
+      idx -= 1; token = "::" + token[:-1]
+    elif token in [' ', '\n', '\t', '\r']:
       idx += 1; 
       try: line[idx]; continue
       except: break
-    elif token == 'v':
+    elif token.islower():
       idx += 1; token += line[idx]
+      if token[0] == 'v':
+        while token[1:].isupper() and token[1:].isalpha():
+          idx += 1
+          try: token += line[idx]
+          except: token += ' '; break
+        idx -= 1; token = token[:-1]
+        if token[1:] not in list(parse.CONSTANTS.keys()):
+          print(colored('ConstError: ', 'red', attrs = ['bold']) + colored(f'"{token}" is not a valid constant.', 'red')); sys.exit(0)
+      elif token not in list(parse.FUNCTIONS.keys()):
+        print(colored('FuncError: ', 'red', attrs = ['bold']) + colored(f'"{token}" is not a valid function.', 'red')); sys.exit(0)
     else:
       funcs = list(parse.FUNCTIONS.keys())
       contains = lambda x, y: [x in i for i in y]
@@ -69,9 +96,14 @@ def parseLine(line):
         try: token += line[idx]
         except: token += ' '; break
       idx -= 1; token = token[:-1]
+      if reach == 1: 
+        tokens += [token]; idx += 1; break
+      elif reach == 2: 
+        print(colored('FuncError: ', 'red', attrs = ['bold']) + colored(f'"{token}" is not a constant.', 'red')); sys.exit(0)
     tokens += [token]; idx += 1
     try: line[idx]
     except: break
+    if reach == 2: break
   return tokens
   
 def parseNestedBracks(line):
@@ -100,12 +132,40 @@ def printData(value, d = 0):
   #     string = [i + j + ' ' for i, j in zip(string, data)]
   #   return '\n'.join(string)
   # return d * '  ' + '╭\n' + ('\n' * (maxd - d - 2)).join(string) + '\n' + ' ' * (max([len(j) for i in string for j in i.split("\n")]) + 1) + '╯'
-  return f'{d * "  "}[\n{"\n".join([printData(i, d + 1) for i in value])}\n{d * "  "}]' + ('\n' * (d != 1))
+  return f'{d * "  "}[\n{"\n".join([printData(i, d + 1) for i in value])}\n{d * "  "}]' # + ('\n' * (d != 1))
   
+REWRITES = {
+  # '%%': '⁒',
+  # '_>': '»',
+  # '_<': '«',
+  # '~~': '〜',
+  # '_~': '≈',
+  '.;': '„',
+  '``': '‘',
+  '$`': '’',
+  # '\\\\': '＼',
+  # '::': '≡',
+  # '_!': '¡',
+  # '_#': '↕',
+  # '$$': '§'
+  # '\n': ' '
+}
+
+def format(string, flip = False):
+  for key, value in REWRITES.items():
+    string = string.replace(value, key) if flip else string.replace(key, value)
+  return string
+
 if __name__ == '__main__':
   if sys.argv[1][-4:] == '.agl':
-    with open(sys.argv[1]) as contents:
-      file = '\n'.join([i[:i.index('.;') if '.;' in i else len(i)] for i in contents.readlines()])
+    with open(sys.argv[1], 'r') as contents:
+      content = contents.read()
+    with open(sys.argv[1], 'w') as contents:
+      contents.write(format(content).replace('}{', '│'))
+    with open(sys.argv[1], 'r') as contents: 
+      contents.seek(0)
+      file = ''.join([format(i[:i.index('„') if '„' in i else len(i)].replace('\n', ' ').replace('│', '}{')) for i in contents.readlines()])
+    # print(file)
     os.system('cls' if os.name == 'nt' else 'clear')
     tokens = [parseNestedBracks(i) for i in parseLine(file)]
     stack = parse.run(tokens, [])
