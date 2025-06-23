@@ -50,15 +50,11 @@ def parseLine(line, reach = 0):
       # print(token, bracks, idx)
     elif token in ']}':
       print(colored('SyntaxError: ', 'red', attrs = ['bold']) + colored(f'Unmatched \'{token[-1]}\'', 'red')); sys.exit(0)
-    elif token == '‘':
-      token = ''.join([str(i) if type(i) == int else i for i in parseLine(line[idx + 1:], 1)])
-      idx += len(token)
-      token = '{' + token + '}'
-    elif token == '’':
-      token = parseLine(line[idx + 1:], 2)[0]
-      token = str(token) if type(token) == int else token
-      idx += len(token)
-      token = '{' + token + '}'
+    elif token in '‘“':
+      idx += 1
+      _, length = parseLine(line[idx:], ' ‘“'.index(token))
+      token = '{' + line[idx:idx + length] + '}'
+      idx += length - 1
     elif token.isupper(): 
       while token.isupper() and token.isalpha():
         idx += 1
@@ -86,8 +82,16 @@ def parseLine(line, reach = 0):
         idx -= 1; token = token[:-1]
         if token[1:] not in list(parse.CONSTANTS.keys()):
           print(colored('ConstError: ', 'red', attrs = ['bold']) + colored(f'"{token}" is not a valid constant.', 'red')); sys.exit(0)
+        elif token[1:] in list(parse.CONSTANTS.keys()):
+          if reach == 2: 
+            tokens += [token]; idx += 1; break
       elif token not in list(parse.FUNCTIONS.keys()):
         print(colored('FuncError: ', 'red', attrs = ['bold']) + colored(f'"{token}" is not a valid function.', 'red')); sys.exit(0)
+      elif token in list(parse.FUNCTIONS.keys()):
+        if reach == 1: 
+          tokens += [token]; idx += 1; break
+        elif reach == 2: 
+          print(colored('FuncError: ', 'red', attrs = ['bold']) + colored(f'"{token}" is not a constant.', 'red')); sys.exit(0)
     else:
       funcs = list(parse.FUNCTIONS.keys())
       contains = lambda x, y: [x in i for i in y]
@@ -104,12 +108,12 @@ def parseLine(line, reach = 0):
     try: line[idx]
     except: break
     if reach == 2: break
-  return tokens
+  return tokens, idx
   
 def parseNestedBracks(line):
   if str(line)[0] + str(line)[-1] in ['[]', '{}']:
     result = []
-    if line[0] in '[{': result = [parseNestedBracks(i) for i in parseLine(line[1:-1])]
+    if line[0] in '[{': result = [parseNestedBracks(i) for i in parseLine(line[1:-1])[0]]
     return result if line[0] == '[' else tuple(result)
   else: return line
   
@@ -140,9 +144,9 @@ REWRITES = {
   # '_<': '«',
   # '~~': '〜',
   # '_~': '≈',
-  '.;': '„',
-  '``': '‘',
-  '$`': '’',
+  # '.;': '„',
+  'f`': '‘', # F-unction
+  'c`': '“', # C-onstant
   # '\\\\': '＼',
   # '::': '≡',
   # '_!': '¡',
@@ -164,9 +168,9 @@ if __name__ == '__main__':
       contents.write(format(content).replace('}{', '│'))
     with open(sys.argv[1], 'r') as contents: 
       contents.seek(0)
-      file = ''.join([format(i[:i.index('„') if '„' in i else len(i)].replace('\n', ' ').replace('│', '}{')) for i in contents.readlines()])
+      file = ''.join([format(i[:i.index('.;') if '.;' in i else len(i)].replace('\n', ' ').replace('│', '}{')) for i in contents.readlines()])
     # print(file)
     os.system('cls' if os.name == 'nt' else 'clear')
-    tokens = [parseNestedBracks(i) for i in parseLine(file)]
+    tokens = [parseNestedBracks(i) for i in parseLine(file)[0]]
     stack = parse.run(tokens, [])
     if stack: print('{\n' + '\n'.join([printData(i, 1) for i in stack]) + '\n}')
