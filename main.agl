@@ -3,12 +3,11 @@
 .; {.#2>{%0>}%1+$<}PRIME .; Built-in primality check
 {#{1+.‘3%‘5%=‘0=&&vFB2\#:*‘+/:$&‘#$>p!}%}FB
 .; "CODEGOLF".s#2{>!}%%0:+‘+\~~
-.; "supercalifragilisticexpialidocious"[0.2 5 ' ]|
-.; "supercalifragilisticexpialidocious"[0.1 5 2]|
+.; "supercalifragilisticexpialidocious"SPCL[2~ 5 ' ][0 5 2]{SPCL:|}&
 .; 100FB
 .; 100#2>{mp#1=}-
 .; "3   4\n4   3\n2   5\n1   3\n3   9\n3   3"'\n\\‘' \\%
 .; "These are some words"' \\{1|~:|:+}%' $$
 .; [1 [2 3 4] 2 3 1][2 3 4]_\\
 .; ["T " "H " "E " "S " "E " "S " "O " "M " "E " "W " "O " "R " "D " "S "]‘{' =!}-%
-"These are some words"‘0s@-2/
+{.##.‘==.{\‘_>|}|=}IDMAT
