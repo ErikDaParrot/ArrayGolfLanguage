@@ -87,8 +87,9 @@ FUNCTIONS = {
     [A, I], lambda x, y: [x[y:] + x[:y]],
     [A, L], lambda x, y: [func.reshape(x, y)],
     [S], lambda x: [x.upper()],
-    # [A, A, F], lambda x, y, z, t: [None, *zipmap(x, y, z, t)]
-    [A, A, F], lambda x, y, z: zipmap(x, y, z),
+    [A, A, F], lambda x, y, z, t: zipmap(x, y, z),
+    [a, A, F], lambda x, y, z: zipmap(func.tolist(x) * len(y), y, z),
+    [A, a, F], lambda x, y, z: zipmap(x, func.tolist(y) * len(x), z),
   ], '|~': [
     [A, I], lambda x, y: [x[:y], x[y:]],
     [A, L], lambda x, y: [func.partEnclose(x, y)],
@@ -107,7 +108,7 @@ FUNCTIONS = {
     # [a, F, F], lambda x, y, z, t: [None, *fork(x, y, z, t)],
     # [A, A, F], lambda x, y, z, t: [None, *table(x, y, z, t)],
     [a, F, F], lambda x, y, z: fork(x, y, z),
-    [A, A, F], lambda x, y, z: [table(x, y, z)],
+    [A, A, F], lambda x, y, z: table(x, y, z),
   ], '\\': [
     [f], lambda x: [1 / x],
     [A], lambda x: [x[::-1]],
@@ -122,6 +123,7 @@ FUNCTIONS = {
     [A, I], lambda x, y: [x[y]],
     [A, L], lambda x, y: [func.select(x, y)]
   ], '?': [
+    [a, A], lambda x, y: [func.membership(x, y)],
     [A, a], lambda x, y: [func.membership(x, y)],
     [I, F, F], lambda x, y, z, t: [None, *(run(y, t[:-3]) if x else run(z, t[:-3]))]
   ], '&': [
@@ -423,8 +425,8 @@ def map(x, y, z = []): # x: arg, y: func, z: stack
   # # print(pop, push, y, z, output)
   # # print("endmap")
   # return z[:-pop if pop else len(z)] + output
-  i = [a[-1] for i in x if (a := run(y, [i]))]
-  return [i] * (i != [])
+  i = [a for i in x if (a := run(y, [i]))]
+  return func.transpose(i) * (i != [])
   
 # def sign_map(x, y, z): # x: arg, y: func, z: stack
 #   if x == []: return 0, 0, [y], []
@@ -440,11 +442,13 @@ def map(x, y, z = []): # x: arg, y: func, z: stack
   
 ## ZIPMAP ##
 def zipmap(x, y, z, t = []): # x, y: arg, z: func, t: stack
+  minimal = min(len(x), len(y))
+  x, y = x[:minimal], y[:minimal]
   # pop, _, _, output = sign_zipmap(x, y, z, t)
   # t += [x, y]
   # return t[:-pop if pop else len(t)] + output[0]
-  i = [a[-1] for i, j in zip(x, y) if (a := run(z, [i, j]))]
-  return [i] * (i != [])
+  i = [a for i, j in zip(x, y) if (a := run(z, [i, j]))]
+  return func.transpose(i) * (i != [])
   
 # def sign_zipmap(x, y, z, t): # x: arg, y: arg, z: func, t: stack
 #   if [] in [x, y]: raise ValueError('\'|\' requires two non-empty lists')
@@ -466,7 +470,7 @@ def table(x, y, z, t = 0): # x, y: arg, z: func, t: stack
   # popat, pushat = -pop if pop else len(z), -push if push else len(z)
   # result = func.transpose([func.transpose([run(z, t + [i, j])[pushat:] for j in y]) for i in x])
   # return (t + [x, y])[:popat] + result if result else [[]]
-  i = [a[-1] for i in x for j in y if (a := run(z, [i, j]))]
+  i = [[a[-1] for i in x if (a := run(z, [i, j]))] for j in y]
   return [i] * (i != [])
   
 def forLoop(x, y, z): # x: func, y: int, z: stack
