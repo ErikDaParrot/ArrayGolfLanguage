@@ -37,7 +37,7 @@ FUNCTIONS = {
     [S, S], lambda x, y: [x + y]
   ], '-': [
     [f, f], lambda x, y: [x - y],
-    [A], lambda x: [func.classify(x)],
+    [A, a], lambda x, y: [[i for i in x if i not in func.tolist(y)]],
     [A, F], lambda x, y, z: [list(filter(lambda i: run(y, [i])[-1], x))]
   ], '*': [
     [f, f], lambda x, y: [x * y],
@@ -134,15 +134,14 @@ FUNCTIONS = {
     [I], lambda x: [list(range(x))],
     [A], lambda x: [len(x)],
     [A, f], lambda x, y: [[x[i:i + int(len(x) * y)] for i in range(0, len(x), int(len(x) * y))]],
-    [A, F], lambda x, y, z: [None, *zipmap(list(range(len(x))), x, y, z)]
+    [A, F], lambda x, y, z: zipmap(list(range(len(x))), x, y)
   ], '_': [
     [a], lambda x: [[x]]
   ], '_^': [
+    [A], lambda x: [func.classify(x)],
   ], '_!': [
-    [A, a], lambda x, y: [[i for i, j in enumerate(x) if j == y]],
+    # [A, a], lambda x, y: [[i for i, j in enumerate(x) if j == y]],
   ], '_~': [
-    [f], lambda x: [(x > 0) - (x < 0)],
-    [A], lambda x: [*x]
   ], '_\\': [
     # [A, [I, L]], lambda x, y: [func.windows(x, y)],
     # [A, [I, L], F], lambda x, y, z, t: [None, *run(['/', ('\\', '_~',) * bool(z) + z, '%'], t + [x, y])]
@@ -167,6 +166,8 @@ FUNCTIONS = {
     [A, A], lambda x, y: [fold(x, (':', f'"{y}"' if type(y) == str else y, '+', ':', '+'), [], 0)],
   ], '.': [
     [a], lambda x: [x, x]
+  ], '.-': [
+    [f], lambda x: [(x > 0) - (x < 0)]
   ], '.<': [
     [f], lambda x: [math.floor(x)]
   ], '.>': [
@@ -232,7 +233,7 @@ FUNCTIONS = {
   's#': [
     [I], lambda x: [chr(x)],
     [S], lambda x: [[ord(i) for i in x] if len(x) > 1 else ord(x)],
-    [L], lambda x: [chr(i) for i in x],
+    [L], lambda x: [[chr(i) for i in x]],
   ], 's@': [
     [S, I], lambda x, y: [[x.isalnum(), x.isalpha(), x.isdigit()][y] if 0 <= y <= 2 else None]
   ], 'sr!': [
