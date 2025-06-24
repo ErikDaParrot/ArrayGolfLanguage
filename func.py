@@ -3,7 +3,7 @@ import main
 import math
 from skimage.util import *
 
-tolist = lambda x: x if type(x) == list else [x]
+tolist = lambda x: x if type(x) in [str, list] else [x]
 
 dedup = lambda x: [j for i, j in enumerate(x) if j not in x[:i]]
 unique = lambda x: [int(j not in x[:i]) for i, j in enumerate(x)]
@@ -23,7 +23,7 @@ parse = lambda x: [main.parseNestedBracks(i) for i in main.parseLine(x)]
 trigonometry = lambda x, y: [None, math.sin(x), math.cos(x), math.tan(x), math.atan(x), math.acos(x), math.asin(x)][y] if abs(x) < 4 else None
 prefix = lambda x: [x[0] if i == 1 else x[:i] for i in range(1, len(x) + 1)]
 suffix = lambda x: [x[-1] if i == 1 else x[-i:] for i in range(1, len(x) + 1)]
-membership = lambda x, y: reshape([int(a in ravel(y)) for a in ravel(x)], np.array(x).shape)
+membership = lambda x, y: reshape([int(a in ravel(tolist(y))) for a in ravel(tolist(x))], np.array(tolist(x)).shape)
 where = lambda x: [i if np.array(x).ndim == 1 else encode(x.shape, i) for i, o in enumerate(ravel(x)) if o]
 # # reshape = lambda x, y: resize(ravel(x), [len(ravel(x)) // math.prod([i for i in y if i != 0]) \
 # #  if not i else i for i in y]) if y.count(0) <= 1 else None;
@@ -32,12 +32,12 @@ printData = lambda s: '{\n' + '\n'.join([main.printData(i, 1) for i in s]) + '\n
 
 def reshape(x, y):
   fill = None
-  if 0.2 in y: fill, y = y[-1], y[:-1]
+  if -2 in y: fill, y = y[-1], y[:-1]
   if sum([i < 1 for i in y]) > 1: return None
   x = list(ravel(x)); dim = [i for i in y if i >= 1]
   dim = len(x) // math.prod(dim) if 0 in y else math.ceil(len(x) / math.prod(dim))
   dim = [dim if i < 1 else i for i in y]
-  if 0.2 in y: x = x + [fill] * (math.prod(dim) - len(x)) if math.prod(dim) > len(x) else x[:math.prod(dim)]
+  if -2 in y: x = x + [fill] * (math.prod(dim) - len(x)) if math.prod(dim) > len(x) else x[:math.prod(dim)]
   return np.resize(x, tuple(dim)).tolist()
 
 def partition(x, y):
