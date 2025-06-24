@@ -10,8 +10,8 @@ from termcolor import colored, cprint
 f, I, S, L, F = [complex, float, int], [int], [str], [list], [tuple]
 s, A, i, N, a, AA = [complex, float, int, str], [str, list], [int, list], [float, int, list], [complex, float, int, str, list], [complex, float, int, str, list, tuple]
 
-findPop = lambda x, y: max(0, findSig(x, y)[0])
-findPush = lambda x, y: max(0, findSig(x, y)[1])
+# findPop = lambda x, y: max(0, findSig(x, y)[0])
+# findPush = lambda x, y: max(0, findSig(x, y)[1])
 # VIV = lambda x, y: x if x else y # VALUE IF VALUE IS NOT 'EMPTY'
 
 vars = {}
@@ -47,7 +47,7 @@ FUNCTIONS = {
     [F, I], lambda x, y, z: [None, *forLoop(x, y, z)],
     [F, F], lambda x, y, z: [None, *whileLoop(x, y, z)]
   ], '/': [
-    [f, f], lambda x, y: [x / y],
+    [f, f], lambda x, y: [x / y if y != 0 else float('inf')],
     # [A, [I, L]], lambda x, y: [func.windows(x, y)],
     [A, I], lambda x, y: [func.smallWindows(x, y)],
     [A, L], lambda x, y: [func.partition(x, y)],
@@ -74,12 +74,14 @@ FUNCTIONS = {
   ], '!': [
     [f], lambda x: [1 - x],
     [A], lambda x: [func.unique(x)],
-    [F], lambda x, y: [None, *run(x, y)]
+    [F, F], lambda x, y, z: [None, *tryCatch(x, y, z)]
   ], '~': [
     [f], lambda x: [-x],
     [L], lambda x: [func.ravel(x)],
     [S], lambda x: [*run(func.parse(x), [])]
   ], '~~': [ # 〜
+    [f[0]], lambda x: [math.sqrt(x.real**2 + x.imag**2)],
+    [f], lambda x: [abs(x)],
     [A, L], lambda x, y: [func.group(x, y)],
     # [S], lambda x: [*run(func.parse(x) + ['~'], [])]
   ], '|': [
@@ -131,7 +133,7 @@ FUNCTIONS = {
     # [a, a, F], lambda x, y, z, t: [None, *both(x, y, z, t)]
     [a, a, F], lambda x, y, z: both(x, y, z),
   ], '#': [
-    [I], lambda x: [list(range(x))],
+    [I], lambda x: [list(range(-(x < 0), x - (x < 0), 1 - 2 * (x < 0)))],
     [A], lambda x: [len(x)],
     [A, f], lambda x, y: [[x[i:i + int(len(x) * y)] for i in range(0, len(x), int(len(x) * y))]],
     [A, F], lambda x, y, z: zipmap(list(range(len(x))), x, y)
@@ -179,6 +181,8 @@ FUNCTIONS = {
     [a, a], lambda x, y: [x, y, x]
   ], ':': [
     [a, a], lambda x, y: [y, x]
+  ], ':=': [
+    
   ], ';': [
     [a], lambda x: []
   ], 
@@ -191,8 +195,8 @@ FUNCTIONS = {
     [], lambda z: [None, *(z[-3:] + [z[-2], z[-1], z[-3]] if len(z) > 2 else z[-2:] + [z[-1], z[-2]])]
   ], ')': [
     [], lambda z: [None, *(z[-3:] + [z[-1], z[-3], z[-2]] if len(z) > 2 else z[-2:] + [z[-1], z[-2]])]
-  ], 
-  '`': [
+  ], '`': [
+    [f[0]], lambda x: [x.real, x.imag],
     [I], lambda x, y: [y[-x - 1]],
     [A], lambda x: [*x]
   ], 
@@ -222,12 +226,8 @@ FUNCTIONS = {
   # COMPLEX FUNCTIONS
   'c+': [
     [f[1:], f[1:]], lambda x, y: [complex(x, y)]
-  ], 'c:': [
-    [f[0]], lambda x: [x.real, x.imag]
   ], 'c-': [
     [f[0]], lambda x: [complex(x.real, -x.imag)]
-  ], 'c\\': [
-    [f], lambda x: [math.sqrt(x.real**2 + x.imag**2)],
   ],
   # STRING FUNCTIONS
   's#': [
@@ -254,11 +254,15 @@ FUNCTIONS = {
     [a], lambda x: ([], [print(x)])[0],
   ], 'p?': [
     [], lambda: [input()],
+  ], 
+  # ERROR FUNCTIONS
+  'e!': [
+    [I], lambda x: ([], [exec('raise AssertionError()')])[0],
+    [S], lambda x: ([], [exec('raise RaisedError(x)')])[0]
   ],
   # DATETIME FUNCTIONS
-  'd>': [
-    [f], lambda x: [list(time.gmtime(x))[:6]]
-  ], 'd<': [
+  'd~': [
+    [f], lambda x: [list(time.gmtime(x))[:6]],
     [L], lambda x: [dt.datetime(*x, tzinfo = dt.timezone.utc).timestamp()]
   ], 'd.': [
     [], lambda: [time.time()]
@@ -267,19 +271,19 @@ FUNCTIONS = {
   ],
   # RANDOM FUNCTIONS
   'r~': [
-    [], lambda x: [random.random()],
+    [], lambda: [random.random()],
   ], 'r#': [
     [I], lambda x: [random.randint(0, x)],
-  ], 'r-': [
-    [I, I], lambda x, y: [random.randint(x, y)],
-  ], 'r?': [
     [A], lambda x: [random.choice(x)],
+  ], 'r?': [
+    [I, I], lambda x, y: [random.randint(x, y)],
+    [A], lambda x: [random.shuffle(x)],
   ], 'r%': [
-    [I, I], lambda x, y: [random.sample(range(1, y + 1), x)]
+    # [I, I], lambda x, y: [random.sample(range(1, y + 1), x)]
   ]
 }
 
-def run(tokens, stack, debug = False):
+def run(tokens, stack, debug = False, catch = False):
   # print(stack)
   if debug: print(colored('*Tokens:', 'yellow'), tokens)
   for token in tokens:
@@ -289,7 +293,7 @@ def run(tokens, stack, debug = False):
       # stack = stack[:-pop if pop else len(stack)] + [run(token, stack[:])[-push if push else len(stack):]]
       stack += [run(token, [])]
     elif type(token) == tuple: stack += [token]
-    elif str(token)[:2] == '::': vars[token[2:]], stack = stack[-1], stack[:-1]
+    elif str(token)[0] == '⸬': vars[token[1]], stack = stack[-1], stack[:-1]
     elif str(token).isupper() and str(token).isalpha(): 
       if token in vars.keys(): 
         if type(vars[token]) != tuple: stack += [vars[token]]
@@ -302,35 +306,34 @@ def run(tokens, stack, debug = False):
         # print(token, stackValues, "pass")
         try:
           try: result = function(*stackValues, stack[:])
-          except: 
-            try: result = function(*stackValues)
-            except:
-              print(colored('FuncError: ', 'red', attrs = ['bold']) + colored(f'\'{token}\' reported an error.', 'red'))
-              print(colored('Debug:\n', 'yellow') + func.printData(stack))
-              sys.exit(0)
+          except TypeError: result = function(*stackValues)
           if len(result) >= 1 and result[0] == None: 
             stack, result = [], result[1:]
-        except (ZeroDivisionError, ValueError) as e: result = [math.nan]
+        except RaisedError as e: 
+          if catch: raise e
+          print(colored('RaisedError: ', 'red', attrs = ['bold']) + colored(e, 'red'))
+          print(colored('Debug:\n', 'yellow') + func.printData(stack))
+          sys.exit(0)
+        except AssertionError as e:
+          if catch: raise e
+          print(colored('AssertionError: ', 'red', attrs = ['bold']))
+          print(colored('Debug:\n', 'yellow') + func.printData(stack))
+          sys.exit(0)
+        except Exception as e:
+          if catch: raise e
+          print(math.atan(math.pi/2))
+          print(colored('FuncError: ', 'red', attrs = ['bold']) + colored(f'\'{token}\' reported an error.', 'red'))
+          print(colored('Debug:\n', 'yellow') + func.printData(stack))
+          sys.exit(0)
         stack += result
         #print(stack)
-      except SystemExit: 
-        pass
-      except:
+      except Func404: 
         if len(token) > 1: token = list(token)
         else: 
           print(colored('FuncError: ', 'red', attrs = ['bold']) + colored(f'\'{token}\' is not compatible with the stack.', 'red'))
           print(colored('Debug:\n', 'yellow') + func.printData(stack))
           sys.exit(0)
         stack = run(token, stack)
-      # if (stackValues, function) == (None, None):
-      #   print(colored('FuncError: ', 'red', attrs = ['bold']) + colored(f'\'{token}\' is not compatible with the stack.', 'red'))
-      #   print(colored('Debug:\n', 'yellow') + '{\n' + '\n'.join(['  ' + repr(i) for i in stack]) + '\n}')
-      #   sys.exit(0)
-          # except: 
-          #   print(tmc.colored('FuncError: ', 'red') + tmc.colored(f'\'{token}\' is not compatible with the stack.'))
-          #   print('{\n' + '\n'.join(['  ' + repr(i) for i in stack]) + '\n}')
-          #   sys.exit(1)
-        # result = [correctType(i) for i in result]
     else: stack += [token]
     stack = [correctType(i) for i in stack]
     if debug: print(colored('*Token&Stack:', 'yellow'), token, stack)
@@ -349,11 +352,7 @@ def findFunc(token, stack):
     if all(types): 
       function = test[1]; break
   if not function:
-    raise ValueError(f'\'{token}\' is not compatible with the stack.')
-    # print(colored('FuncError: ', 'red', attrs = ['bold']) + colored(f'\'{token}\' is not compatible with the stack.', 'red'))
-    # print(colored('Debug:\n', 'yellow') + '{\n' + '\n'.join(['  ' + repr(i) for i in stack]) + '\n}')
-    # sys.exit(0)
-    # return (None, None)
+    raise Func404()
   return ([stack.pop() for _ in range(stackpops)][::-1], function)
   
 def fold(x, y, z, ac): # x: list, y: func, z: stack, s: accml?
@@ -482,6 +481,10 @@ def whileLoop(x, y, z): # x: func, y: cond, z: stack
   while z[-1]: z = run(y, run(x, z[:-1]))
   return z[:-1]
   
+def tryCatch(x, y, z): # x: func, y: func, z: stack
+  try: return run(x, z[:], catch = True)
+  except: return run(y, z[:])
+  
 # def findSig(x, y): # x: func, y: stack
 #   pop, push = 0, 0
 #   # print(x, y)
@@ -585,6 +588,10 @@ def correctType(x):
     if all([type(_) == str and len(_) == 1 for _ in x]): return ''.join(x)
     return [correctType(i) for i in x]
   else: return x
+  
+class Func404(Exception): pass
+class FuncError(Exception): pass
+class RaisedError(Exception): pass
   
 # print(findSig(((('+',), '%'), '%'), [3, [[1, 2], [11, 3]]]))
 # print(map([1, 2, 3], ('+', 11), [11]))
