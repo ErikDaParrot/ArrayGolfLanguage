@@ -1,11 +1,11 @@
 import parse
-import os, sys
+import os, sys, re
 import numpy as np
 from termcolor import colored, cprint
 
 def parseLine(line, reach = 0):
   tokens, token, idx = [], "", 0
-  if line.isspace() or line == '': return []
+  if line.isspace() or line == '': return [], 0
   while True:
     token = line[idx]
     if token.isdigit():
@@ -22,6 +22,7 @@ def parseLine(line, reach = 0):
       while line[idx] != '"':
         token += eval(f"\"\\{line[idx + 1]}\"") if line[idx] == '\\' else line[idx]
         idx += (line[idx] == '\\') + 1
+        if idx >= len(line): break
       token = f'"{token}"'
     elif token == '\'':
       idx += 1
@@ -36,11 +37,13 @@ def parseLine(line, reach = 0):
     elif token in '{[':
       bracks = [token];
       while bracks:
-        # print(token, bracks, idx)
+        # print(token, bracks, line)
         idx += 1;
         try: token += line[idx]
         except: 
           print(colored('SyntaxError: ', 'red', attrs = ['bold']) + colored(f'\'{bracks[-1]}\' was never closed', 'red')); sys.exit(0)
+        if token[-1] == '│':
+          token = token[:-1]; line = line[:idx] + '}{' + line[idx + 1:]; idx -= 1
         if token[-2:] not in list(parse.FUNCTIONS.keys()):
           if token[-1] in '{[': bracks += token[-1]
           elif token[-1] in ']}':
@@ -55,6 +58,8 @@ def parseLine(line, reach = 0):
       _, length = parseLine(line[idx:], ' ‘“'.index(token))
       token = '{' + line[idx:idx + length] + '}'
       idx += length - 1
+    elif token == '⌀':
+      token = '{}'
     elif token.isupper(): 
       while token.isupper() and token.isalpha():
         idx += 1
@@ -138,7 +143,7 @@ def printData(value, d = 0):
   # return d * '  ' + '╭\n' + ('\n' * (maxd - d - 2)).join(string) + '\n' + ' ' * (max([len(j) for i in string for j in i.split("\n")]) + 1) + '╯'
   return f'{d * "  "}[\n{"\n".join([printData(i, d + 1) for i in value])}\n{d * "  "}]' # + ('\n' * (d != 1))
   
-REWRITES = {
+FORMATS = {
   # '%%': '⁒',
   # '_>': '»',
   # '_<': '«',
@@ -147,6 +152,8 @@ REWRITES = {
   # '.;': '„',
   'f`': '‘', # F-unction
   'c`': '“', # C-onstant
+  '{}': '⌀',
+  '}{': '│',
   # '\\\\': '＼',
   # '::': '≡',
   # '_!': '¡',
@@ -156,7 +163,7 @@ REWRITES = {
 }
 
 def format(string, flip = False):
-  for key, value in REWRITES.items():
+  for key, value in FORMATS.items():
     string = string.replace(value, key) if flip else string.replace(key, value)
   return string
 
@@ -165,10 +172,10 @@ if __name__ == '__main__':
     with open(sys.argv[1], 'r') as contents:
       content = contents.read()
     with open(sys.argv[1], 'w') as contents:
-      contents.write(format(content).replace('}{', '│'))
+      contents.write(format(content))
     with open(sys.argv[1], 'r') as contents: 
       contents.seek(0)
-      file = ''.join([format(i[:i.index('.;') if '.;' in i else len(i)].replace('\n', ' ').replace('│', '}{')) for i in contents.readlines()])
+      file = ''.join([format(i[:i.index('.;') if '.;' in i else len(i)].replace('\n', ' ')) for i in contents.readlines()])
     # print(file)
     os.system('cls' if os.name == 'nt' else 'clear')
     tokens = [parseNestedBracks(i) for i in parseLine(file)[0]]
