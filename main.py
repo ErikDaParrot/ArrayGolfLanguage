@@ -61,18 +61,23 @@ def parseLine(line, reach = 0):
     elif token == '⌀':
       token = '{}'
     elif token.isupper(): 
-      while token.isupper() and token.isalpha():
-        idx += 1
-        try: token += line[idx]
-        except: token += ' '; break
-      idx -= 1; token = token[:-1]
-    elif line[idx:idx + 2] == '::':
-      idx += 2; token = line[idx]
-      while token.isupper() and token.isalpha():
-        idx += 1
-        try: token += line[idx]
-        except: token += ' '; break
-      idx -= 1; token = "::" + token[:-1]
+      # while token.isupper() and token.isalpha():
+      #   idx += 1
+      #   try: token += line[idx]
+      #   except: token += ' '; break
+      # idx -= 1; token = token[:-1]
+      pass
+    elif line[idx] == '⸬':
+      idx += 1; 
+      try: 
+        assert line[idx].isupper(); token = '⸬' + line[idx]
+      except: print(colored('DefinitionError: ', 'red', attrs = ['bold']) + colored(f'Variable not found preceding "⸬"', 'red')); sys.exit(0)
+      # while token.isupper() and token.isalpha():
+      #   idx += 1
+      #   try: token += line[idx]
+      #   except: token += ' '; break
+      # idx -= 1
+      # token = "⸬" + token[:-1]
     elif token in [' ', '\n', '\t', '\r']:
       idx += 1; 
       try: line[idx]; continue
@@ -110,6 +115,7 @@ def parseLine(line, reach = 0):
       elif reach == 2: 
         print(colored('FuncError: ', 'red', attrs = ['bold']) + colored(f'"{token}" is not a constant.', 'red')); sys.exit(0)
     tokens += [token]; idx += 1
+    # print(repr(token), idx, repr(line), repr(line[:idx]))
     try: line[idx]
     except: break
     if reach == 2: break
@@ -154,6 +160,7 @@ FORMATS = {
   'c`': '“', # C-onstant
   '{}': '⌀',
   '}{': '│',
+  '(:*)::(?!⸬)': '\\1⸬',
   # '\\\\': '＼',
   # '::': '≡',
   # '_!': '¡',
@@ -164,10 +171,11 @@ FORMATS = {
 
 def format(string, flip = False):
   for key, value in FORMATS.items():
-    string = string.replace(value, key) if flip else string.replace(key, value)
+    string = re.sub(value, key, string) if flip else re.sub(key, value, string)
   return string
 
 if __name__ == '__main__':
+  sys.tracebacklimit = None
   if sys.argv[1][-4:] == '.agl':
     with open(sys.argv[1], 'r') as contents:
       content = contents.read()
