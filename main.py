@@ -17,6 +17,7 @@ def parseLine(line, reach = 0):
       if token[-2] == '.': 
         idx -= 1; token = token[:-1]
       token = int(token[:-1]) if '.' not in token[:-1] else float(token[:-1])
+      if reach and line[idx + 1] == '~': tokens, idx = tokens + [token], idx + 1
     elif token == '"':
       idx += 1; token = ''
       while line[idx] != '"':
@@ -154,8 +155,8 @@ FORMATS = {
   # '~~': '〜',
   # '_~': '≈',
   # '.;': '„',
-  '`\'': '‘', # F-unction
-  '`"': '“', # C-onstant
+  '`\'': '‘',
+  '`"': '“',
   '{}': '⌀',
   # '(:*)::(?!⸬)': '\\1⸬',
   # '\\\\': '＼',
