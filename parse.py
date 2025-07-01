@@ -8,23 +8,21 @@ import calendar as cal
 from termcolor import colored, cprint
 
 f, I, S, L, F = [complex, float, int], [int], [str], [list], [tuple]
-s, A, i, N, a, AA = [complex, float, int, str], [str, list], [int, list], [float, int, list], [complex, float, int, str, list], [complex, float, int, str, list, tuple]
+s, A, i, N, a, AA = f + S, S + L, I + L, [float] + I + L, f + S + L, f + S + L + F
 
 # findPop = lambda x, y: max(0, findSig(x, y)[0])
 # findPush = lambda x, y: max(0, findSig(x, y)[1])
 # VIV = lambda x, y: x if x else y # VALUE IF VALUE IS NOT 'EMPTY'
-
-vars = {}
+rotU = lambda x: x[1:] + x[:1]; rotD = lambda x: x[-1:] + x[:-1]
+fill, vars = None, {}
 
 CONSTANTS = {
   'A': 'abcdefghijklmnopqrstuvwxyz',
   'D': '0123456789',
-  'dR': 180 / math.pi,
   'E': math.e,
-  'FB': 'FizzBuzz',
+  'F': 'FizzBuzz',
   'I': float('inf'),
   'P': math.pi,
-  'PR': func.primesLess(1000005),
 }
 
 FUNCTIONS = {
@@ -34,11 +32,22 @@ FUNCTIONS = {
     [L, L], lambda x, y: [x + y],
     [L, s], lambda x, y: [x + [y]],
     [s, L], lambda x, y: [[x] + y],
-    [S, S], lambda x, y: [x + y]
+    [S, S], lambda x, y: [x + y],
+    [S, I], lambda x, y: [chr(ord(x) + y)],
+    # [F, F], lambda x, y: [x + y],
+    [a, a, F], lambda x, y, z: table(x if type(x) in A else list(range(x)), y if type(y) in A else list(range(y)), z),
+  ], '`+': [
+    [f], lambda x: [abs(x)],
+    [A, A], lambda x, y: [np.union1d(x, y).tolist()]
   ], '-': [
     [f, f], lambda x, y: [x - y],
+    [S, I], lambda x, y: [chr(ord(x) - y)],
     [A, a], lambda x, y: [[i for i in x if i not in func.tolist(y)]],
     [A, F], lambda x, y, z: [list(filter(lambda i: run(y, [i])[-1], x))]
+  ], '`-': [
+    [f], lambda x: [(x > 0) - (x < 0)],
+    [f[:1]], lambda x: [complex(x.real / (h := math.hypot(x.real, x.imag)), x.imag / h)],
+    [A, A], lambda x, y: [np.intersect1d(x, y).tolist()]
   ], '*': [
     [f, f], lambda x, y: [x * y],
     [A, I], lambda x, y: [x * y],
@@ -46,145 +55,132 @@ FUNCTIONS = {
     [A, L], lambda x, y: [func.keep(x, y)],
     [F, I], lambda x, y, z: [None, *forLoop(x, y, z)],
     [F, F], lambda x, y, z: [None, *whileLoop(x, y, z)]
+  ], '`*': [
+    [f], lambda x: [math.exp(x)],
+    [A, L], lambda x, y: [func.group(x, y)],
   ], '/': [
     [f, f], lambda x, y: [x / y if y != 0 else float('inf')],
     # [A, [I, L]], lambda x, y: [func.windows(x, y)],
     [A, I], lambda x, y: [func.smallWindows(x, y)],
-    [A, L], lambda x, y: [func.partition(x, y)],
-    [S], lambda x: [x.lower()],
+    [L, L], lambda x, y: [func.windows(x, y)],
     [A, F], lambda x, y, z: [fold(x, y, z, 0)],
     [A, I, F], lambda x, y, z, t: [None, *run(['/', ('\\', '`',) * bool(z) + z, '%'], t + [x, y])]
-  ], '%': [
-    [f, f], lambda x, y: [x % y],
-    [A], lambda x: [func.transpose(x)],
-    # [A, F], lambda x, y, z: [None, *map(x, y, z)],
-    # [A, F], lambda x, y: [[run(y, [i])[0] for i in x]],
-    [A, F], lambda x, y: map(x, y)
-  ], 
-  '%%': [ # ⁒
-    # [f, f], lambda x, y, z: [None, *run(['%', '%'], z + [x, y])],
-    [L, I + L], lambda x, y: [func.windows(x, y)],
-    # [A, L], lambda x, y: [func.partition(x, y)]
-    [A, I + L, F], lambda x, y, z, t: [None, *run(['%%', ('\\', '`',) * bool(z) + z, '%'], t + [x, y])]
-    # [A, F], lambda x, y, z: [None, *run(['%', '%'], z + [x, y])]
-  ], 
-  '^': [
+  ], '`/': [
+    [f, f], lambda x, y: [*divmod(x, y)],
+    [A, L], lambda x, y: [func.partition(x, y) if len(x) == len(y) else func.splitBy(x, y)],
+  ], '^': [
     [f, f], lambda x, y: [x ** y],
-    [A], lambda x: [func.dedup(x)]
-  ], '!': [
-    [f], lambda x: [1 - x],
-    [A], lambda x: [func.unique(x)],
-    [F, F], lambda x, y, z: [None, *tryCatch(x, y, z)]
+    [A], lambda x: [func.dedup(x)],
+    [A, I], lambda x, y: [x[:y], x[y:]]
+  ], '`^': [
+    [A], lambda x: [func.unique(x)]
   ], '~': [
     [f], lambda x: [-x],
     [L], lambda x: [func.ravel(x)],
-    [S], lambda x: [*run(func.parse(x), [])]
-  ], '~~': [ # 〜
-    [f[0]], lambda x: [math.sqrt(x.real**2 + x.imag**2)],
-    [f], lambda x: [abs(x)],
-    [A, L], lambda x, y: [func.group(x, y)],
-    # [S], lambda x: [*run(func.parse(x) + ['~'], [])]
-  ], '|': [
-    # [f, f], lambda x, y: [x or y],
-    [A, I], lambda x, y: [x[y:] + x[:y]],
-    [A, L], lambda x, y: [func.reshape(x, y)],
-    [S], lambda x: [x.upper()],
-    [A, A, F], lambda x, y, z, t: zipmap(x, y, z),
-    [a, A, F], lambda x, y, z: zipmap(func.tolist(x) * len(y), y, z),
-    [A, a, F], lambda x, y, z: zipmap(x, func.tolist(y) * len(x), z),
-  ], '|~': [
-    [A, I], lambda x, y: [x[:y], x[y:]],
-    [A, L], lambda x, y: [func.partEnclose(x, y)],
+  ], '`~': [
+    [f, I], lambda x, y: [func.trigonometry(x, y)],
+    [f[:1]], lambda x: [complex(x.real, -x.imag)]
   ], '<': [
     [f, f], lambda x, y: [x < y],
     [A, I], lambda x, y: [x[:y]],
     [A], lambda x: [x[0]], 
-    # [F], lambda x, y: [None, *keepArgs(x, y[:-1], -1)]
+    [a, a, a, F], lambda x, y, z, t: [None, sidedBoth(x, y, z, t, 0)]
+  ], '`<': [
+    [f, f], lambda x, y: [min(x, y)],
+    [S, S], lambda x, y: [min(x, y)],
+    [L, L], lambda x, y: [min(x, y)],
   ], '>': [
     [f, f], lambda x, y: [x > y],
     [A, I], lambda x, y: [x[y:]],
     [A], lambda x: [x[-1]],
-    # [F], lambda x, y: [None, *keepArgs(x, y[:-1], 1)]
+    [a, a, a, F], lambda x, y, z, t: [None, sidedBoth(x, y, z, t, 1)]
+  ], '`>': [
+    [f, f], lambda x, y: [max(x, y)],
+    [S, S], lambda x, y: [max(x, y)],
+    [L, L], lambda x, y: [max(x, y)],
   ], '=': [
     [a, a], lambda x, y: [x == y],
     # [a, F, F], lambda x, y, z, t: [None, *fork(x, y, z, t)],
     # [A, A, F], lambda x, y, z, t: [None, *table(x, y, z, t)],
     [a, F, F], lambda x, y, z: fork(x, y, z),
-    [A, A, F], lambda x, y, z: table(x, y, z),
-  ], '\\': [
-    [f], lambda x: [1 / x],
-    [A], lambda x: [x[::-1]],
-    [A, F], lambda x, y, z: [fold(x, y, z, 1)]
-  ], '\\\\': [ # ＼
-    # [f], lambda x: [1 / x],
-    [A, A], lambda x, y: [func.splitBy(x, y)],
-    # [A, F], lambda x, y, z: [fold(x, y, z, 1)[::-1]]
-  ], '@': [
-    [f, f], lambda x, y: [math.log(x, y)],
-    [S], lambda x: [x.swapcase()],
-    [A, I], lambda x, y: [x[y]],
-    [A, L], lambda x, y: [func.select(x, y)]
+  ], '!': [
+    [a], lambda x: [int(not bool(x))],
+    [F], lambda x, y: [None, run(x, y)]
+  ], '`!': [
   ], '?': [
     [a, A], lambda x, y: [func.membership(x, y)],
     [A, a], lambda x, y: [func.membership(x, y)],
     [I, F, F], lambda x, y, z, t: [None, *(run(y, t[:-3]) if x else run(z, t[:-3]))]
+  ], '`?': [
+    [L], lambda x: [func.where(x)]
+  ], '\\': [
+    [f], lambda x: [1 / x],
+    [A], lambda x: [x[::-1]],
+    [A, F], lambda x, y, z: [fold(x, y, z, 1)]
+  ], '_': [
+    [a], lambda x: [[x]]
+  ], '`_': [
+    [f, f], lambda x, y: [complex(x, y)],
+    [f[:1]], lambda x: [x.real, x.imag],
+  ], '%': [
+    [f, f], lambda x, y: [x % y],
+    [A], lambda x: [np.transpose(x).tolist()],
+    [A, I], lambda x, y: [func.cut(x, y)],
+    # [A, F], lambda x, y, z: [None, *map(x, y, z)],
+    # [A, F], lambda x, y: [[run(y, [i])[0] for i in x]],
+    [A, F], lambda x, y: map(x, y)
+  ], '`%': [
+    [f, f], lambda x, y: [x % y == 0]
+    # [f, f + L], lambda x, y: [func.encode(x, y)],
+    # [L, f + L], lambda x, y: [func.decode(x, y)],
+  ], '@': [
+    [f, f], lambda x, y: [math.log(x, y)],
+    [A, I], lambda x, y: [x[y]],
+    [A, L], lambda x, y: [func.select(x, y)]
   ], '&': [
     [a, a], lambda x, y: [[x, y]],
     # [a, a, F], lambda x, y, z, t: [None, *both(x, y, z, t)]
     [a, a, F], lambda x, y, z: both(x, y, z),
-  ], '#': [
-    [I], lambda x: [list(range(-(x < 0), x - (x < 0), 1 - 2 * (x < 0)))],
-    [A], lambda x: [len(x)],
-    [A, f], lambda x, y: [[x[i:i + int(len(x) * y)] for i in range(0, len(x), int(len(x) * y))]],
-    [A, F], lambda x, y, z: zipmap(list(range(len(x))), x, y)
-  ], '_': [
-    [a], lambda x: [[x]]
-  ], '_^': [
-    [A], lambda x: [func.classify(x)],
-  ], '_!': [
-    # [A, a], lambda x, y: [[i for i, j in enumerate(x) if j == y]],
-  ], '_~': [
-  ], '_\\': [
-    # [A, [I, L]], lambda x, y: [func.windows(x, y)],
-    # [A, [I, L], F], lambda x, y, z, t: [None, *run(['/', ('\\', '_~',) * bool(z) + z, '%'], t + [x, y])]
-    # [A, I], lambda x, y: [[x[i:i + y] for i in range(0, len(x), y)]],
-    # [A, f], lambda x, y: [[x[i:i + int(len(x) * y)] for i in range(0, len(x), int(len(x) * y))]]
-  ], '_<': [ # «
-    [f, f], lambda x, y: [min(x, y)],
-    [A], lambda x: [func.suffix(x)]
-  ], '_>': [ # »
-    [f, f], lambda x, y: [max(x, y)],
-    [A], lambda x: [func.prefix(x)]
-  ], '_#': [
-    [I, I], lambda x, y: [list(range(x, y))],
-    [L], lambda x: [list(np.array(x).shape)],
-    [A, I], lambda x, y: [[x[i:i + y] for i in range(0, len(x), y)]],
+  ], '`&': [
+    [A], lambda x: [func.classify(x)]
   ], '$': [
-    [f], lambda x: [str(x)],
     [A], lambda x: [sorted(x)],
-    [A, F], lambda x, y, z: [sorted(x, key = lambda i: run(y, z + [i])[-1])]
-  ], '$$': [ # §
-    # [A, S], lambda x, y: [y.join(x)],
-    [A, A], lambda x, y: [fold(x, (':', f'"{y}"' if type(y) == str else y, '+', ':', '+'), [], 0)],
-  ], '.': [
-    [a], lambda x: [x, x]
-  ], '.-': [
-    [f], lambda x: [(x > 0) - (x < 0)]
-  ], '.<': [
-    [f], lambda x: [math.floor(x)]
-  ], '.>': [
-    [f], lambda x: [math.ceil(x)]
-  ], '.=': [
-    [f], lambda x: [round(x)]
-  ], '.:': [
-  ], ',': [
-    [a, a], lambda x, y: [x, y, x]
-  ], ':': [
-    [a, a], lambda x, y: [y, x]
-  ], ':=': [
     
+    [A, F], lambda x, y, z: [sorted(x, key = lambda i: run(y, z + [i])[-1])]
+  ], '`$': [
+    [A], lambda x: [func.sortIdx(x)],
+  ], '#': [
+    [I], lambda x: [list(range(0, x, (x > 0) - (x < 0)))],
+    [A], lambda x: [len(x)],
+    
+    [I, F], lambda x, y: map(range(0, x, (x > 0) - (x < 0)), y),
+    [A, F], lambda x, y: zipmap(list(range(len(x))), x, y),
+    [F, F], lambda x, y, z: [None, *tryCatch(x, y, z)]
+  ], '`#': [
+    [I], lambda x: [list(range((x > 0) - (x < 0), x + (x > 0) - (x < 0), (x > 0) - (x < 0)))],
+    [L], lambda x: [list(np.array(x).shape)],
+    
+    [I, F], lambda x, y: map(range((x > 0) - (x < 0), x + (x > 0) - (x < 0), (x > 0) - (x < 0)), y),
+    [A, F], lambda x, y: zipmap(list(range(1, len(x) + 1)), x, y),
+  ], '|': [
+    # [f, f], lambda x, y: [x or y],
+    [f[:1]], lambda x: [math.hypot(x.real, x.imag)],
+    [A, I], lambda x, y: [x[y:] + x[:y]],
+    [A, L], lambda x, y: [func.reshape(x, y, fill)],
+    
+    [A, A, F], lambda x, y, z, t: zipmap(x, y, z),
+    [a, A, F], lambda x, y, z: zipmap(func.tolist(x) * len(y), y, z),
+    [A, a, F], lambda x, y, z: zipmap(x, func.tolist(y) * len(x), z),
+  ], '`|': [
+    [A, L], lambda x, y: [np.transpose(x, y).tolist()],
+  ], '.': [
+    [a + F], lambda x: [x, x]
+  ], ',': [
+    [a + F, a + F], lambda x, y: [x, y, x]
+  ], ':': [
+    [a + F, a + F], lambda x, y: [y, x]
   ], ';': [
-    [a], lambda x: []
+    [a + F], lambda x: []
   ], 
   # '(': [
   #   [], lambda z: [None, *(z[1:] + z[:1])]
@@ -192,98 +188,91 @@ FUNCTIONS = {
   #   [], lambda z: [None, *(z[-1:] + z[:-1])]
   # ], 
   '(': [
-    [], lambda z: [None, *(z[-3:] + [z[-2], z[-1], z[-3]] if len(z) > 2 else z[-2:] + [z[-1], z[-2]])]
+    [], lambda x: [None, *rotU(x)]
   ], ')': [
-    [], lambda z: [None, *(z[-3:] + [z[-1], z[-3], z[-2]] if len(z) > 2 else z[-2:] + [z[-1], z[-2]])]
-  ], '`': [
-    [f[0]], lambda x: [x.real, x.imag],
-    [I], lambda x, y: [y[-x - 1]],
-    [A], lambda x: [*x]
-  ], 
+    [], lambda x: [None, *rotD(x)]
+  ],
+  '`[': [
+  ], '`]': [
+  ],
   ## EXTERNAL FUNCTIONS
-  # MATH FUNCTIONS
-  'm!': [
-    [f], lambda x: [math.gamma(x)]
-  ], 'mt': [
-    [f, I], lambda x, y: [func.trigonometry(x, y)]
-  ], 'mE': [
-    [I], lambda x: [math.exp(x)]
-  ], 'mp': [
-    [I], lambda x: [func.primeFactors(x)]
+  # BITWISE, BASE FUNCTIONS
+  'b&': [
+    [I, I], lambda x, y: [x & y]
+  ], 'b|': [
+    [I, I], lambda x, y: [x | y]
+  ], 'b^': [
+    [I, I], lambda x, y: [x ^ y]
+  ], 'b~': [
+    [I], lambda x: [~x]
+  ], 'b<': [
+    [I, I], lambda x, y: [x << y]
+  ], 'b>': [
+    [I, I], lambda x, y: [x >> y]
+  ], 'b=': [
+    [f, L + f], lambda x, y: [func.encode(x, y)],
+    [L, L + f], lambda x, y: [func.decode(x, y)],
   ],
-  # TUPLE FUNCTIONS
-  'tp': [
-    [f, f], lambda x, y: [math.perm(x, y)],
-    [A, I], lambda x, y: [[list(i) for i in list(it.permutations(x, y))]]
-  ], 'tP': [
-    [A], lambda x: [[i for i in func.partitions(x)]]
-  ], 'tc': [
-    [f, f], lambda x, y: [math.comb(x, y)],
-    [A, I], lambda x, y: [[list(i) for i in list(it.combinations(x, y))]]
-  ], 'tC': [
-    [A, I], lambda x, y: [[list(i) for i in list(it.combinations_with_replacement(x, y))]]
+  # ERROR FUNCTIONS
+  'e!': [
+    [I], lambda x: ([], exec('raise AssertionError()'))[0],
+    [S], lambda x: ([], exec('raise RaisedError(x)'))[0],
+  ], 'e*': [
+    [], lambda: ([], sys.exit(0))[0]
   ],
-  # COMPLEX FUNCTIONS
-  'c+': [
-    [f[1:], f[1:]], lambda x, y: [complex(x, y)]
-  ], 'c-': [
-    [f[0]], lambda x: [complex(x.real, -x.imag)]
+  # GENERATE FNS
+  'g': [
+    [f], lambda x: [random.random() if x == 0 else random.randint(0, x)],
+    [A], lambda x: [random.shuffle(x)]
   ],
-  # STRING FUNCTIONS
-  's#': [
-    [I], lambda x: [chr(x)],
-    [S], lambda x: [[ord(i) for i in x] if len(x) > 1 else ord(x)],
-    [L], lambda x: [[chr(i) for i in x]],
-  ], 's@': [
-    [S, I], lambda x, y: [[x.isalnum(), x.isalpha(), x.isdigit()][y] if 0 <= y <= 2 else None]
-  ], 'sr!': [
+  # TUPLE FNS
+  # 'tp': [
+  #   [f, f], lambda x, y: [math.perm(x, y)],
+  #   [A, I], lambda x, y: [[list(i) for i in list(it.permutations(x, y))]]
+  # ], 'tP': [
+  #   [A], lambda x: [[i for i in func.partitions(x)]]
+  # ], 'tc': [
+  #   [f, f], lambda x, y: [math.comb(x, y)],
+  #   [A, I], lambda x, y: [[list(i) for i in list(it.combinations(x, y))]]
+  # ], 'tC': [
+  #   [A, I], lambda x, y: [[list(i) for i in list(it.combinations_with_replacement(x, y))]]
+  # ],
+  # IN/OUT FNS
+  'i?': [
+    [], lambda: [input()],
+  ], 'o.': [
+    [a], lambda x: ([], [print(x, end = '')])[0],
+  ], 'o!': [
+    [a], lambda x: ([], [print(x)])[0],
+  ],
+  # STR FNS
+  # 's#': [
+  #   [I], lambda x: [chr(x)],
+  #   [S], lambda x: [[ord(i) for i in x] if len(x) > 1 else ord(x)],
+  #   [L], lambda x: [[chr(i) for i in x]],
+  # ], 's@': [
+  #   [S, I], lambda x, y: [[x.isalnum(), x.isalpha(), x.isdigit()][y] if 0 <= y <= 2 else None]
+  # ], 
+  's:': [
     [S, S, S], lambda x, y, z: [re.sub(y, z, x)]
-  ], 'sr-': [
-    [S, S], lambda x, y: [re.sub(y, '', x)]
-  ], 's!': [
-    [S, S, S], lambda x, y, z: [x.replace(y, z)]
-  ], 's-': [
-    [S, S], lambda x, y: [x.replace(y, '')]
   ], 's?': [
     [S, S], lambda x, y: [re.findall(y, x)]
   ],
-  # IN/OUT FUNCTIONS
-  'p.': [
-    [a], lambda x: ([], [print(x, end = '')])[0],
-  ], 'p!': [
-    [a], lambda x: ([], [print(x)])[0],
-  ], 'p?': [
-    [], lambda: [input()],
-  ], 
-  # ERROR FUNCTIONS
-  'e!': [
-    [I], lambda x: ([], [exec('raise AssertionError()')])[0],
-    [S], lambda x: ([], [exec('raise RaisedError(x)')])[0]
-  ],
-  # DATETIME FUNCTIONS
-  'd~': [
+  # TIME, TYPE FNS
+  't=': [
     [f], lambda x: [list(time.gmtime(x))[:6]],
     [L], lambda x: [dt.datetime(*x, tzinfo = dt.timezone.utc).timestamp()]
-  ], 'd.': [
+  ], 't.': [
     [], lambda: [time.time()]
-  ], 'd|': [
+  ], 't|': [
     [], lambda: [time.localtime().tm_gmtoff / 3600]
-  ],
-  # RANDOM FUNCTIONS
-  'r~': [
-    [], lambda: [random.random()],
-  ], 'r#': [
-    [I], lambda x: [random.randint(0, x)],
-    [A], lambda x: [random.choice(x)],
-  ], 'r?': [
-    [I, I], lambda x, y: [random.randint(x, y)],
-    [A], lambda x: [random.shuffle(x)],
-  ], 'r%': [
-    # [I, I], lambda x, y: [random.sample(range(1, y + 1), x)]
+  ], 't~': [
+    [f], lambda x: [time.sleep(x)]
   ]
 }
 
 def run(tokens, stack, debug = False, catch = False):
+  global vars, fill
   # print(stack)
   if debug: print(colored('*Tokens:', 'yellow'), tokens)
   for token in tokens:
@@ -293,22 +282,22 @@ def run(tokens, stack, debug = False, catch = False):
       # stack = stack[:-pop if pop else len(stack)] + [run(token, stack[:])[-push if push else len(stack):]]
       stack += [run(token, [])]
     elif type(token) == tuple: stack += [token]
-    elif str(token)[0] == '⸬': vars[token[1]], stack = stack[-1], stack[:-1]
+    elif str(token)[:2] == '`=': vars[token[2:]], stack = stack[-1], stack[:-1]
     elif str(token).isupper() and str(token).isalpha(): 
       if token in vars.keys(): 
         if type(vars[token]) != tuple: stack += [vars[token]]
         else: stack = run(vars[token], stack[:])
       else: vars[token], stack = stack[-1], stack[:-1]
-    elif type(token) == str and token[0] == 'v': stack += [CONSTANTS[token[1:]]]
+    elif type(token) == str and token[0] == '`' and token[1].isalpha(): stack += [CONSTANTS[token[1]]]
+    elif token == '`]': fill = stack.pop()
     elif token in FUNCTIONS.keys() or (type(token) == str and len(token) > 1 and all([i in FUNCTIONS.keys() for i in token])):
       try:
         stackValues, function = findFunc(token, stack)
         # print(token, stackValues, "pass")
         try:
           try: result = function(*stackValues, stack[:])
-          except TypeError: result = function(*stackValues)
-          if len(result) >= 1 and result[0] == None: 
-            stack, result = [], result[1:]
+          except TypeError as e: result = function(*stackValues)
+          if len(result) >= 1 and result[0] == None: stack, result = [], result[1:]
         except RaisedError as e: 
           if catch: raise e
           print(colored('RaisedError: ', 'red', attrs = ['bold']) + colored(e, 'red'))
@@ -319,13 +308,16 @@ def run(tokens, stack, debug = False, catch = False):
           print(colored('AssertionError: ', 'red', attrs = ['bold']))
           print(colored('Debug:\n', 'yellow') + func.printData(stack))
           sys.exit(0)
+        except SystemExit as e:
+          sys.exit(0)
         except Exception as e:
           if catch: raise e
-          print(math.atan(math.pi/2))
+          print(e)
           print(colored('FuncError: ', 'red', attrs = ['bold']) + colored(f'\'{token}\' reported an error.', 'red'))
           print(colored('Debug:\n', 'yellow') + func.printData(stack))
           sys.exit(0)
         stack += result
+        fill = None
         #print(stack)
       except Func404: 
         if len(token) > 1: token = list(token)
@@ -387,7 +379,15 @@ def both(x, y, z, t = []): # x: arg, y: arg, z: func, t: stack
   # pop, _, _, output = sign_both(x, y, z, t)
   # t += [x, y]
   # return t[:-pop if pop else len(t)] + output
-  return run(z, [x]) + run(z, [y])
+  return run(z, t + [x]) + run(z, t + [y])
+  
+ 
+def sidedBoth(x, y, z, t, d, s = []): # x: arg, y: arg, z: arg, t: func, d: direction, s: stack
+  # pop, _, _, output = sign_fork(x, y, z, t)
+  # t += [x]
+  # return t[:-pop if pop else len(t)] + output
+  i1, i2 = run(t, s + [x, y, z][d:d + 2]), run(t, s + [x, z])
+  return i2 + i1 if d else i1 + i2
 
 # def sign_both(x, y, z, t): # x: arg, y: arg, z: func, t: stack
 #   popx, popy = findPop(z, t + [x]), findPop(z, t + [y])
@@ -401,11 +401,11 @@ def both(x, y, z, t = []): # x: arg, y: arg, z: func, t: stack
 #   return pop, pushx + pushy, vals, output
   
 ## FORK ##
-def fork(x, y, z, t = []): # x: arg, y: func, z: func, t: stack
+def fork(x, y, z, t = []): # x: arg, y: arg, z: func, t: stack
   # pop, _, _, output = sign_fork(x, y, z, t)
   # t += [x]
   # return t[:-pop if pop else len(t)] + output
-  return run(y, [x]) + run(z, [x])
+  return run(y, t + [x]) + run(z, t + [x])
   
 # def sign_fork(x, y, z, t): # x: arg, y: func, z: func, t: stack
 #   pop = max(findPop(y, t + [x]), findPop(z, t + [x]))
