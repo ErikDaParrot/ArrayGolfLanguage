@@ -47,9 +47,15 @@ def parseLine(line, reach = 0):
         if token[-2:] not in list(parse.FUNCTIONS.keys()):
           if token[-1] in '{[': bracks += token[-1]
           elif token[-1] in ']}':
+            if bracks[-1] + token[-1] == '{]':
+              line = line[:idx] + '{' + line[idx + 1:]
+              token = token[:-1] + '}'; idx -= 1; break;
+            # print(bracks, repr(token))
             if bracks[-1] + token[-1] not in ['[]', '{}'] and token[-2:] not in list(parse.FUNCTIONS.keys()): 
               print(colored('SyntaxError: ', 'red', attrs = ['bold']) + colored(f'Unmatched \'{token[-1]}\'', 'red')); sys.exit(0)
             else: bracks.pop();
+      if reach == 2: 
+        tokens += [token]; idx += 1; break
       # print(token, bracks, idx)
     elif token in ']}':
       print(colored('SyntaxError: ', 'red', attrs = ['bold']) + colored(f'Unmatched \'{token[-1]}\'', 'red')); sys.exit(0)
@@ -57,6 +63,7 @@ def parseLine(line, reach = 0):
       idx += 1
       _, length = parseLine(line[idx:], ' ‘“'.index(token))
       token = '{' + line[idx:idx + length] + '}'
+      # print(line[idx:idx + length], token)
       idx += length - 1
     elif token == '⌀':
       token = '{}'
@@ -67,11 +74,11 @@ def parseLine(line, reach = 0):
       #   except: token += ' '; break
       # idx -= 1; token = token[:-1]
       pass
-    elif line[idx] == '⸬':
-      idx += 1; 
+    elif line[idx:idx + 2] == '`=':
+      idx += 2; 
       try: 
-        assert line[idx].isupper(); token = '⸬' + line[idx]
-      except: print(colored('DefinitionError: ', 'red', attrs = ['bold']) + colored(f'Variable not found preceding "⸬"', 'red')); sys.exit(0)
+        assert line[idx].isupper(); token = '`=' + line[idx]
+      except: print(colored('DefinitionError: ', 'red', attrs = ['bold']) + colored(f'Variable not found preceding "`="', 'red')); sys.exit(0)
       # while token.isupper() and token.isalpha():
       #   idx += 1
       #   try: token += line[idx]
@@ -82,20 +89,11 @@ def parseLine(line, reach = 0):
       idx += 1; 
       try: line[idx]; continue
       except: break
+    elif token == '`' and line[idx + 1].isalpha():
+      token += line[idx + 1]; idx += 1
     elif token.islower():
       idx += 1; token += line[idx]
-      if token[0] == 'v':
-        while token[1:].isupper() and token[1:].isalpha():
-          idx += 1
-          try: token += line[idx]
-          except: token += ' '; break
-        idx -= 1; token = token[:-1]
-        if token[1:] not in list(parse.CONSTANTS.keys()):
-          print(colored('ConstError: ', 'red', attrs = ['bold']) + colored(f'"{token}" is not a valid constant.', 'red')); sys.exit(0)
-        elif token[1:] in list(parse.CONSTANTS.keys()):
-          if reach == 2: 
-            tokens += [token]; idx += 1; break
-      elif token not in list(parse.FUNCTIONS.keys()):
+      if token not in list(parse.FUNCTIONS.keys()):
         print(colored('FuncError: ', 'red', attrs = ['bold']) + colored(f'"{token}" is not a valid function.', 'red')); sys.exit(0)
       elif token in list(parse.FUNCTIONS.keys()):
         if reach == 1: 
@@ -156,11 +154,10 @@ FORMATS = {
   # '~~': '〜',
   # '_~': '≈',
   # '.;': '„',
-  'f`': '‘', # F-unction
-  'c`': '“', # C-onstant
+  '`\'': '‘', # F-unction
+  '`"': '“', # C-onstant
   '{}': '⌀',
-  '}{': '│',
-  '(:*)::(?!⸬)': '\\1⸬',
+  # '(:*)::(?!⸬)': '\\1⸬',
   # '\\\\': '＼',
   # '::': '≡',
   # '_!': '¡',
@@ -178,12 +175,12 @@ if __name__ == '__main__':
   sys.tracebacklimit = None
   if sys.argv[1][-4:] == '.agl':
     with open(sys.argv[1], 'r') as contents:
-      content = contents.read()
+      content = contents.readlines()
     with open(sys.argv[1], 'w') as contents:
-      contents.write(format(content))
+      contents.writelines([format(i[:(a := i.index('``') if '``' in i else len(i))]) + i[a:] for i in content])
     with open(sys.argv[1], 'r') as contents: 
       contents.seek(0)
-      file = ''.join([format(i[:i.index('.;') if '.;' in i else len(i)].replace('\n', ' ')) for i in contents.readlines()])
+      file = ''.join(i[:i.index('``') if '``' in i else len(i)] for i in contents.readlines()).replace('\n', ' ')
     # print(file)
     os.system('cls' if os.name == 'nt' else 'clear')
     tokens = [parseNestedBracks(i) for i in parseLine(file)[0]]
